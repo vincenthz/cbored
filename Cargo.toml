@@ -1,0 +1,13 @@
+[package]
+name = "cbored"
+version = "0.1.0"
+edition = "2021"
+authors = ["Vincent Hanquez <vincent@typed.io>"]
+license = "MIT/APACHE-2.0"
+homepage = "https://github.com/vincenthz/cbored"
+repository = "https://github.com/vincenthz/cbored"
+description = "CBOR exact reader and writer"
+keywords = ["CBOR"]
+categories = [""]
+
+[dependencies]
