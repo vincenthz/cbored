@@ -89,4 +89,38 @@ mod tests {
         assert_eq!(con, Constant::True);
         assert_eq!(pos.to_u64(), 124);
     }
+
+    pub struct Inner(u64, bool);
+
+    impl Decode for Inner {
+        fn decode<'a>(reader: &mut Reader<'a>) -> Result<Self, DecodeError> {
+            let a = reader.array()?;
+            if a.len() != 2 {
+                return Err(DecodeError::Custom(format!("expectig length of 2")));
+            }
+
+            let i = a[0].decode().expect("inner integer");
+            let b = a[1].decode().expect("inner bool");
+            Ok(Inner(i, b))
+        }
+    }
+
+    #[test]
+    fn test_decode() {
+        const DATA: &[u8] = &[0x83, 0x1, 0x7, 0x82, 0x1A, 0x41, 0x70, 0xCB, 0x17, 0xF4];
+
+        let mut r = Reader::new(DATA);
+        let a = r.array().expect("array");
+        assert_eq!(a.len(), 3);
+        let e0: u64 = a[0].decode().expect("u64 (1)");
+        assert_eq!(e0, 1);
+
+        let e1: u64 = a[1].decode().expect("u64 (2)");
+        assert_eq!(e1, 7);
+
+        let e2: Inner = a[2].decode().expect("e2");
+        assert_eq!(e2.0, 1097911063);
+        assert_eq!(e2.1, false);
+        assert!(r.is_finished());
+    }
 }

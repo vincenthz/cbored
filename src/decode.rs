@@ -69,6 +69,12 @@ impl Decode for DataOwned {
     }
 }
 
+impl Decode for bool {
+    fn decode<'a>(reader: &mut Reader<'a>) -> Result<Self, DecodeError> {
+        reader.bool().map_err(|e| e.into())
+    }
+}
+
 impl Decode for u8 {
     fn decode<'a>(reader: &mut Reader<'a>) -> Result<Self, DecodeError> {
         let pos = reader.positive()?;

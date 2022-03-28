@@ -123,7 +123,7 @@ impl<'a> Reader<'a> {
     /// Assume the reader is finished (no more bytes to process), or
     /// otherwise return a `ReaderError::NotTerminated`
     pub fn expect_finished(&self) -> Result<(), ReaderError> {
-        if self.is_finished() {
+        if !self.is_finished() {
             return Err(ReaderError::NotTerminated {
                 at: self.consumed_bytes(),
                 remaining_bytes: self.remaining_bytes(),
