@@ -8,6 +8,6 @@ homepage = "https://github.com/vincenthz/cbored"
 repository = "https://github.com/vincenthz/cbored"
 description = "CBOR exact reader and writer"
 keywords = ["CBOR"]
-categories = [""]
+categories = [ "parsing", "encoding" ]
 
 [dependencies]
