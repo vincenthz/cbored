@@ -31,6 +31,7 @@ impl<'a> CborDataReader<'a> {
         Self { data, index: 0 }
     }
 
+    /// Return the number of bytes to read in the Data Reader
     pub fn remaining_bytes(&self) -> usize {
         self.data.len() - self.index
     }
@@ -45,7 +46,11 @@ impl<'a> CborDataReader<'a> {
             return Ok(&[]);
         }
         let rem = self.remaining_bytes();
-        if rem < offset {
+        // if offset is more than remaining bytes, that might be
+        // an internal error as previous peeking should have verify
+        // the previous byte(s) are in the buffer already;
+        // only rem == offset could genuinely happen
+        if rem <= offset {
             return Err(CborDataMissing {
                 expecting_bytes: n,
                 got_bytes: 0,
@@ -58,7 +63,7 @@ impl<'a> CborDataReader<'a> {
         if n > offseted_rem {
             Err(CborDataMissing {
                 expecting_bytes: n,
-                got_bytes: rem,
+                got_bytes: rem - offset,
                 context,
             })
         } else {

@@ -193,6 +193,55 @@ mod tests {
         };
     }
 
+    macro_rules! validate_error {
+        ($s: expr) => {
+            match Validator::new($s).next() {
+                Ok((_, _)) => panic!("expecting error but got success"),
+                Err(e) => e,
+            }
+        };
+    }
+
+    #[test]
+    fn data_missing() {
+        // expecting a Bytes of 3 bytes
+        let e = validate_error!(&[0x43]);
+        assert!(matches!(
+            e,
+            ValidateError::DataMissing(CborDataMissing {
+                expecting_bytes: 3,
+                got_bytes: 0,
+                context: _
+            })
+        ));
+
+        // expecting a Bytes of 3 bytes
+        let e = validate_error!(&[0x43, 0x1]);
+        assert!(matches!(
+            e,
+            ValidateError::DataMissing(CborDataMissing {
+                expecting_bytes: 3,
+                got_bytes: 1,
+                context: _
+            })
+        ));
+
+        // expected 2 bytes after integer, to encode 258: 0x19, 0x01, 0x02
+        let e = validate_error!(&[0x19, 0x01]);
+        assert!(
+            matches!(
+                e,
+                ValidateError::DataMissing(CborDataMissing {
+                    expecting_bytes: 2,
+                    got_bytes: 1,
+                    context: CborDataContext::IndirectLen,
+                },),
+            ),
+            "{:?}",
+            e
+        )
+    }
+
     #[test]
     fn array_array() {
         validate_all!(&[0x83, 0x01, 0x82, 0x02, 0x03, 0x82, 0x04, 0x05])
