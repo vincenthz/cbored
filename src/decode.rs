@@ -57,15 +57,10 @@ macro_rules! assert_range {
     };
 }
 
-impl<'b> Decode for Data<'b> {
-    fn decode<'a>(reader: &mut Reader<'a>) -> Result<Self, DecodeError> {
-        reader.decode()
-    }
-}
-
 impl Decode for DataOwned {
     fn decode<'a>(reader: &mut Reader<'a>) -> Result<Self, DecodeError> {
-        reader.decode().to_owned()
+        let data = reader.data()?;
+        Ok(data.owned())
     }
 }
 

@@ -122,3 +122,23 @@ impl DataOwned {
         }
     }
 }
+
+impl<'a> Data<'a> {
+    pub fn owned(&self) -> DataOwned {
+        match self {
+            Data::Positive(v) => DataOwned::Positive(*v),
+            Data::Negative(v) => DataOwned::Negative(*v),
+            Data::Float(v) => DataOwned::Float(*v),
+            Data::Byte(v) => DataOwned::Byte(*v),
+            Data::Bytes(v) => DataOwned::Bytes(v.owned()),
+            Data::Text(v) => DataOwned::Text(v.owned()),
+            Data::Array(v) => DataOwned::Array(v.owned()),
+            Data::Map(v) => DataOwned::Map(v.owned()),
+            Data::Tag(v) => DataOwned::Tag(v.owned()),
+            Data::True => DataOwned::True,
+            Data::False => DataOwned::False,
+            Data::Null => DataOwned::Null,
+            Data::Undefined => DataOwned::Undefined,
+        }
+    }
+}
