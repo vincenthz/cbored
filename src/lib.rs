@@ -175,8 +175,8 @@ mod tests {
                 }
                 {
                     let mut r = v.reader();
-                    let p = r.positive().expect("value[0]");
-                    assert_eq!(p.to_u64(), 0);
+                    let array = r.array().expect("array value[0]");
+                    assert_eq!(array.len(), 2);
                     assert!(r.is_finished());
                 }
             }
