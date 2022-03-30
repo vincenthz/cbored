@@ -139,11 +139,14 @@ impl State {
                     Ok(())
                 }
                 StructTy::Map { exp_val, elements } => {
+                    assert_ne!(*elements, 0, "elements is empty");
+                    // if in a value, then we decrement and set the exp back to false to expect a key
+                    // otherwise in a key, we just set the exp value to true.
                     if *exp_val {
                         *exp_val = false;
-                    } else {
-                        assert_ne!(*elements, 0, "elements is empty");
                         *elements = *elements - 1;
+                    } else {
+                        *exp_val = true;
                     }
                     Ok(())
                 }
@@ -188,12 +191,6 @@ impl State {
         }?;
         Ok(())
     }
-
-    /*
-    fn reduce(&mut self) -> Result<(), StateError> {
-
-    }
-    */
 
     fn check_reduce(&mut self) -> Result<(), StateError> {
         loop {
