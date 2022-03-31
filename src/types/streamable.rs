@@ -45,6 +45,13 @@ pub struct TextData<'a>(pub(crate) Value, pub(crate) &'a str);
 pub struct TextDataOwned(pub(crate) Value, pub(crate) String);
 
 impl<'a> Bytes<'a> {
+    pub fn len(&self) -> usize {
+        match self {
+            Bytes::Imm(bd) => bd.1.len(),
+            Bytes::Chunks(chunks) => chunks.iter().fold(0, |acc, c| acc + c.1.len()),
+        }
+    }
+
     pub fn to_vec(&self) -> Vec<u8> {
         match self {
             Bytes::Imm(bd) => bd.1.to_vec(),

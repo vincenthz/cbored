@@ -129,3 +129,9 @@ impl Encode for [u8] {
         writer.bytes(&Bytes::from_slice(self))
     }
 }
+
+impl<const N: usize> Encode for [u8; N] {
+    fn encode(&self, writer: &mut Writer) {
+        writer.bytes(&Bytes::from_slice(self))
+    }
+}

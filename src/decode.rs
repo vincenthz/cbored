@@ -1,6 +1,6 @@
 use super::context::CborDataOf;
 use super::reader::{Reader, ReaderError};
-use super::types::{Data, DataOwned};
+use super::types::DataOwned;
 use std::fmt;
 
 /// Possible errors when decoding an element
@@ -13,6 +13,8 @@ pub enum DecodeError {
     /// Underlying conversion is out of range, it gives the u64 values that was attempted to
     /// be converted, and the range that was expected by the conversion
     OutOfRange { min: u64, max: u64, got: u64 },
+    /// Unexpected length whilst decoding type
+    UnexpectedLength { expected: usize, got: usize },
     /// A custom error for the decoder
     Custom(String),
 }
@@ -108,6 +110,23 @@ impl Decode for String {
     fn decode<'a>(reader: &mut Reader<'a>) -> Result<Self, DecodeError> {
         let t = reader.text()?;
         Ok(t.to_string())
+    }
+}
+
+impl<const N: usize> Decode for [u8; N] {
+    fn decode<'a>(reader: &mut Reader<'a>) -> Result<Self, DecodeError> {
+        let bytes = reader.bytes()?;
+        if bytes.len() == N {
+            let mut output = [0u8; N];
+            // optimise to not do a to_vec() here
+            output.copy_from_slice(&bytes.to_vec());
+            Ok(output)
+        } else {
+            Err(DecodeError::UnexpectedLength {
+                expected: N,
+                got: bytes.len(),
+            })
+        }
     }
 }
 
