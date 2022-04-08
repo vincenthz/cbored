@@ -1,4 +1,4 @@
-use super::context::CborDataOf;
+use super::prim::CborDataOf;
 use super::reader::{Reader, ReaderError};
 use super::types::DataOwned;
 use std::fmt;
@@ -137,8 +137,8 @@ impl Decode for Vec<u8> {
     }
 }
 
-impl<T: Decode + 'static> Decode for CborDataOf<T> {
+impl<T: Decode> Decode for CborDataOf<T> {
     fn decode<'a>(reader: &mut Reader<'a>) -> Result<Self, DecodeError> {
-        reader.decodable_slice().map(|slice| slice.to_owned())
+        reader.exact_decodable_data()
     }
 }

@@ -1,7 +1,7 @@
-use super::context::CborData;
 use super::encode::Encode;
 use super::header::*;
 use super::lead::*;
+use super::prim::CborData;
 use super::types::*;
 
 /// CBOR Data structure to write CBOR elements to a growing byte vector
@@ -24,6 +24,7 @@ impl Writer {
         self.data
     }
 
+    /// Write a T encodable type in the writer
     pub fn encode<T: Encode + ?Sized>(&mut self, t: &T) {
         t.encode(self)
     }
@@ -31,7 +32,8 @@ impl Writer {
     fn append_byte(&mut self, b: u8) {
         self.data.push(b)
     }
-    fn append_slice(&mut self, b: &[u8]) {
+
+    pub(crate) fn append_slice(&mut self, b: &[u8]) {
         self.data.extend_from_slice(b)
     }
 

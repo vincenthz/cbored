@@ -1,3 +1,4 @@
+use super::prim::{CborData, CborDataOf, CborSlice, CborSliceOf};
 use super::types::*;
 use super::writer::Writer;
 
@@ -133,5 +134,31 @@ impl Encode for [u8] {
 impl<const N: usize> Encode for [u8; N] {
     fn encode(&self, writer: &mut Writer) {
         writer.bytes(&Bytes::from_slice(self))
+    }
+}
+
+// don't need the bound to encode, but just enforce it for soudness of `CborDataOf`
+impl<T: Encode> Encode for CborDataOf<T> {
+    fn encode(&self, writer: &mut Writer) {
+        writer.append_slice(&self.1)
+    }
+}
+
+// don't need the bound to encode, but just enforce it for soudness of `CborDataOf`
+impl<T: Encode> Encode for CborSliceOf<T> {
+    fn encode(&self, writer: &mut Writer) {
+        writer.append_slice(&self.1)
+    }
+}
+
+impl Encode for CborData {
+    fn encode(&self, writer: &mut Writer) {
+        writer.append_slice(&self.0)
+    }
+}
+
+impl Encode for CborSlice {
+    fn encode(&self, writer: &mut Writer) {
+        writer.append_slice(&self.0)
     }
 }

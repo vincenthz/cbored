@@ -2,6 +2,7 @@ use super::context::*;
 use super::decode::*;
 use super::header::*;
 use super::lead::*;
+use super::prim::*;
 use super::state::*;
 use super::types::*;
 
@@ -520,10 +521,13 @@ impl<'a> Reader<'a> {
         }
     }
 
-    pub fn decodable_slice<T: Decode + 'static>(
-        &mut self,
-    ) -> Result<&'a CborSliceOf<T>, DecodeError> {
+    pub fn exact_decodable_slice<T: Decode>(&mut self) -> Result<&'a CborSliceOf<T>, DecodeError> {
         let slice = self.cbor_slice_neutral()?;
         slice.validate_as()
+    }
+
+    pub fn exact_decodable_data<T: Decode>(&mut self) -> Result<CborDataOf<T>, DecodeError> {
+        let slice = self.cbor_slice_neutral()?;
+        slice.validate_as().map(|slice| slice.to_owned())
     }
 }

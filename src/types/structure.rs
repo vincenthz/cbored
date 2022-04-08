@@ -1,7 +1,7 @@
-use super::super::context::{CborData, CborSlice};
 use super::super::decode::{Decode, DecodeError};
 use super::super::encode::Encode;
 use super::super::header::Value;
+use super::super::prim::{CborData, CborSlice};
 use super::super::reader::{Reader, ReaderError};
 use super::super::writer::Writer;
 use std::borrow::{Borrow, ToOwned};

@@ -3,6 +3,7 @@ pub use super::context::CborDataMissing;
 use super::context::*;
 use super::header::{Header, ValueStream};
 use super::lead::*;
+use super::prim::*;
 use super::state::{State, StateError};
 
 /// Enumeration of possible Validator error

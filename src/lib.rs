@@ -15,6 +15,7 @@
 //! })
 
 mod context;
+mod prim;
 
 mod reader;
 mod writer;
@@ -36,6 +37,7 @@ pub use writer::Writer;
 pub use decode::{Decode, DecodeError};
 pub use encode::Encode;
 
+pub use prim::{CborDataOf, CborSliceOf};
 pub use types::*;
 
 #[cfg(test)]
