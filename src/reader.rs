@@ -418,6 +418,9 @@ impl<'a> Reader<'a> {
                     let data = self.cbor_slice_neutral()?;
                     elements.push(data);
                 }
+                // skip the break now that we found it
+                self.reader.advance(advance);
+
                 Ok(Array {
                     len_encoding: content.into(),
                     elements,
