@@ -69,6 +69,12 @@ impl<'a> CborDataReader<'a> {
         }
     }
 
+    /// return the next byte that would be consumed. assume there is a byte to consume,
+    /// not public
+    pub(crate) fn peek_byte(&self) -> u8 {
+        self.data[self.index]
+    }
+
     pub fn advance(&mut self, n: usize) {
         self.index += n;
     }

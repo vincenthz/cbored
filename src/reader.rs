@@ -50,7 +50,11 @@ pub enum ReaderError {
     /// Unexpected type received in an indefinite Bytes where only definite Bytes chunk are allowed
     WrongExpectedTypeInBytes { got: Type },
     /// Expected termination, but still some trailing data available
-    NotTerminated { at: usize, remaining_bytes: usize },
+    NotTerminated {
+        at: usize,
+        remaining_bytes: usize,
+        next_byte: u8,
+    },
 }
 
 impl From<LeadError> for ReaderError {
@@ -128,6 +132,7 @@ impl<'a> Reader<'a> {
             return Err(ReaderError::NotTerminated {
                 at: self.consumed_bytes(),
                 remaining_bytes: self.remaining_bytes(),
+                next_byte: self.reader.peek_byte(),
             });
         }
         Ok(())
@@ -419,7 +424,7 @@ impl<'a> Reader<'a> {
                     elements.push(data);
                 }
                 // skip the break now that we found it
-                self.reader.advance(advance);
+                self.reader.advance(1);
 
                 Ok(Array {
                     len_encoding: content.into(),
@@ -452,12 +457,16 @@ impl<'a> Reader<'a> {
         match content {
             // indefinite Map
             None => {
-                // loop for cbor slices until we find a cbor break
+                // loop for cbor key/value slices until we find a cbor break
                 while self.peek_type()? != Type::Break {
                     let key = self.cbor_slice_neutral()?;
                     let value = self.cbor_slice_neutral()?;
                     elements.push((key, value));
                 }
+
+                // skip the break now that we found it
+                self.reader.advance(1);
+
                 Ok(Map {
                     len_encoding: content.into(),
                     elements,
