@@ -120,6 +120,10 @@ impl TextDataOwned {
     pub fn borrow<'a>(&'a self) -> TextData<'a> {
         TextData(self.0, self.1.as_str())
     }
+
+    pub fn from_string(string: String) -> Self {
+        TextDataOwned(Value::canonical(string.len() as u64), string)
+    }
 }
 
 impl<'a> AsRef<&'a str> for TextData<'a> {
@@ -141,6 +145,10 @@ impl BytesDataOwned {
     pub fn borrow<'a>(&'a self) -> BytesData<'a> {
         BytesData(self.0, self.1.as_ref())
     }
+
+    pub fn from_vec(bytes: Vec<u8>) -> Self {
+        BytesDataOwned(Value::canonical(bytes.len() as u64), bytes)
+    }
 }
 
 impl BytesOwned {
@@ -150,6 +158,10 @@ impl BytesOwned {
             BytesOwned::Chunks(vec) => Bytes::Chunks(vec.iter().map(|bd| bd.borrow()).collect()),
         }
     }
+
+    pub fn from_vec(bytes: Vec<u8>) -> Self {
+        BytesOwned::Imm(BytesDataOwned::from_vec(bytes))
+    }
 }
 
 impl TextOwned {
@@ -158,5 +170,9 @@ impl TextOwned {
             TextOwned::Imm(bd) => Text::Imm(bd.borrow()),
             TextOwned::Chunks(vec) => Text::Chunks(vec.iter().map(|bd| bd.borrow()).collect()),
         }
+    }
+
+    pub fn from_string(string: String) -> Self {
+        TextOwned::Imm(TextDataOwned::from_string(string))
     }
 }

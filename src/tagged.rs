@@ -135,6 +135,13 @@ impl EncodedCBOR {
     pub fn to_bytes(&self) -> Vec<u8> {
         self.1.borrow().to_vec()
     }
+
+    pub fn from_bytes(cbor_bytes: &[u8]) -> Self {
+        EncodedCBOR(
+            TagValue::from_u64(24),
+            BytesOwned::from_vec(cbor_bytes.to_vec()),
+        )
+    }
 }
 
 encode_decode!(EncodedCBOR);
