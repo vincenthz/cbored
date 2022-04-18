@@ -40,6 +40,21 @@ pub use encode::Encode;
 pub use prim::{CborDataOf, CborSliceOf};
 pub use types::*;
 
+/// Try to decode bytes into T from its CBOR bytes representation
+pub fn decode_from_bytes<T: Decode>(slice: &[u8]) -> Result<T, DecodeError> {
+    let mut reader = Reader::new(slice);
+    let t = reader.decode()?;
+    reader.expect_finished()?;
+    Ok(t)
+}
+
+/// Encode an encodable type T into its CBOR bytes representation
+pub fn encode_to_bytes<T: Encode>(t: &T) -> Vec<u8> {
+    let mut writer = Writer::new();
+    t.encode(&mut writer);
+    writer.finalize()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
