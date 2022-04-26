@@ -40,6 +40,9 @@ pub use encode::Encode;
 pub use prim::{CborDataOf, CborSliceOf};
 pub use types::*;
 
+#[cfg(feature = "derive")]
+pub use cbored_derive::CborRepr;
+
 /// Try to decode bytes into T from its CBOR bytes representation
 pub fn decode_from_bytes<T: Decode>(slice: &[u8]) -> Result<T, DecodeError> {
     let mut reader = Reader::new(slice);

@@ -1,18 +1,19 @@
 [package]
-name = "cbored"
-version = "0.1.7"
+name = "cbored-derive"
+version = "0.1.0"
 edition = "2021"
 authors = ["Vincent Hanquez <vincent@typed.io>"]
 license = "MIT/Apache-2.0"
 homepage = "https://github.com/vincenthz/cbored"
 repository = "https://github.com/vincenthz/cbored"
-description = "CBOR exact reader and writer"
+description = "CBOR exact reader and writer (CborRepr derive macro)"
 keywords = ["CBOR"]
 categories = [ "parsing", "encoding" ]
 
-[dependencies]
-cbored-derive = { path = "./cbored-derive", version = "0.1", optional = true }
+[lib]
+proc-macro = true
 
-[features]
-default = []
-derive = ["cbored-derive"]
+[dependencies]
+quote = "1.0"
+proc-macro2 = "1.0"
+syn = "1.0"
