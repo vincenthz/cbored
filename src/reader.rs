@@ -529,17 +529,23 @@ impl<'a> Reader<'a> {
         if remaining_bytes == 0 {
             Ok(t)
         } else {
-            Err(DecodeError::ReaderNotTerminated { remaining_bytes })
+            Err(DecodeErrorKind::ReaderNotTerminated { remaining_bytes }.context::<T>())
         }
     }
 
     pub fn exact_decodable_slice<T: Decode>(&mut self) -> Result<&'a CborSliceOf<T>, DecodeError> {
-        let slice = self.cbor_slice_neutral()?;
+        let slice = self
+            .cbor_slice_neutral()
+            .map_err(DecodeErrorKind::ReaderError)
+            .map_err(|e| e.context::<&'a CborSliceOf<T>>())?;
         slice.validate_as()
     }
 
     pub fn exact_decodable_data<T: Decode>(&mut self) -> Result<CborDataOf<T>, DecodeError> {
-        let slice = self.cbor_slice_neutral()?;
+        let slice = self
+            .cbor_slice_neutral()
+            .map_err(DecodeErrorKind::ReaderError)
+            .map_err(|e| e.context::<CborDataOf<T>>())?;
         slice.validate_as().map(|slice| slice.to_owned())
     }
 }

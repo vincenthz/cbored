@@ -96,9 +96,9 @@ impl<'a> Array<'a> {
         self.elements.iter().map(|v| v.reader())
     }
 
-    pub fn to_vec<F, T: Decode>(&self, f: F) -> Result<Vec<T>, DecodeError>
+    pub fn to_vec<F, T: Decode>(&self, f: F) -> Result<Vec<T>, DecodeErrorKind>
     where
-        F: for<'b> Fn(&mut Reader<'b>) -> Result<T, DecodeError>,
+        F: for<'b> Fn(&mut Reader<'b>) -> Result<T, DecodeErrorKind>,
     {
         let mut output = Vec::with_capacity(self.len());
         for element in self.elements.iter() {
@@ -133,9 +133,9 @@ impl ArrayOwned {
             .map(|v: &'a CborSlice| v.reader())
     }
 
-    pub fn to_vec<'a, F, T: Decode>(&'a self, f: F) -> Result<Vec<T>, DecodeError>
+    pub fn to_vec<'a, F, T: Decode>(&'a self, f: F) -> Result<Vec<T>, DecodeErrorKind>
     where
-        F: Fn(&mut Reader<'a>) -> Result<T, DecodeError>,
+        F: Fn(&mut Reader<'a>) -> Result<T, DecodeErrorKind>,
     {
         let mut output = Vec::with_capacity(self.len());
         for element in self.elements.iter() {
@@ -223,10 +223,14 @@ impl<'a> Map<'a> {
         self.elements.iter().map(|(_k, v)| (v.reader()))
     }
 
-    pub fn to_vec<F, G, K: Decode, V: Decode>(&self, f: F, g: G) -> Result<Vec<(K, V)>, DecodeError>
+    pub fn to_vec<F, G, K: Decode, V: Decode>(
+        &self,
+        f: F,
+        g: G,
+    ) -> Result<Vec<(K, V)>, DecodeErrorKind>
     where
-        F: for<'b> Fn(&mut Reader<'b>) -> Result<K, DecodeError>,
-        G: for<'b> Fn(&mut Reader<'b>) -> Result<V, DecodeError>,
+        F: for<'b> Fn(&mut Reader<'b>) -> Result<K, DecodeErrorKind>,
+        G: for<'b> Fn(&mut Reader<'b>) -> Result<V, DecodeErrorKind>,
     {
         let mut output = Vec::with_capacity(self.len());
         for (k, v) in self.elements.iter() {
@@ -269,10 +273,14 @@ impl MapOwned {
         self.elements.iter().map(|(_k, v)| v.read())
     }
 
-    pub fn to_vec<F, G, K: Decode, V: Decode>(&self, f: F, g: G) -> Result<Vec<(K, V)>, DecodeError>
+    pub fn to_vec<F, G, K: Decode, V: Decode>(
+        &self,
+        f: F,
+        g: G,
+    ) -> Result<Vec<(K, V)>, DecodeErrorKind>
     where
-        F: for<'b> Fn(&mut Reader<'b>) -> Result<K, DecodeError>,
-        G: for<'b> Fn(&mut Reader<'b>) -> Result<V, DecodeError>,
+        F: for<'b> Fn(&mut Reader<'b>) -> Result<K, DecodeErrorKind>,
+        G: for<'b> Fn(&mut Reader<'b>) -> Result<V, DecodeErrorKind>,
     {
         let mut output = Vec::with_capacity(self.len());
         for (k, v) in self.elements.iter() {
@@ -346,7 +354,10 @@ impl<'a> Tag<'a> {
     pub fn decode_data<T: Decode>(&self) -> Result<T, DecodeError> {
         let mut reader: Reader<'a> = self.data.reader();
         let t = <T>::decode(&mut reader)?;
-        reader.expect_finished()?;
+        reader
+            .expect_finished()
+            .map_err(DecodeErrorKind::ReaderError)
+            .map_err(|e| e.context::<Self>())?;
         Ok(t)
     }
 

@@ -34,7 +34,7 @@ pub mod validate;
 pub use reader::{Reader, ReaderError};
 pub use writer::Writer;
 
-pub use decode::{Decode, DecodeError};
+pub use decode::{Decode, DecodeError, DecodeErrorKind};
 pub use encode::Encode;
 
 pub use prim::{CborDataOf, CborSliceOf};
@@ -47,7 +47,10 @@ pub use cbored_derive::CborRepr;
 pub fn decode_from_bytes<T: Decode>(slice: &[u8]) -> Result<T, DecodeError> {
     let mut reader = Reader::new(slice);
     let t = reader.decode()?;
-    reader.expect_finished()?;
+    reader
+        .expect_finished()
+        .map_err(DecodeErrorKind::ReaderError)
+        .map_err(|e| e.context::<T>())?;
     Ok(t)
 }
 
@@ -114,9 +117,14 @@ mod tests {
 
     impl Decode for Inner {
         fn decode<'a>(reader: &mut Reader<'a>) -> Result<Self, DecodeError> {
-            let a = reader.array()?;
+            let a = reader
+                .array()
+                .map_err(DecodeErrorKind::ReaderError)
+                .map_err(|e| e.context::<Self>())?;
             if a.len() != 2 {
-                return Err(DecodeError::Custom(format!("expectig length of 2")));
+                return Err(
+                    DecodeErrorKind::Custom(format!("expectig length of 2")).context::<Self>()
+                );
             }
 
             let i = a[0].decode().expect("inner integer");

@@ -58,7 +58,9 @@ macro_rules! encode_decode {
     ($type:ident) => {
         impl Decode for $type {
             fn decode<'a>(reader: &mut Reader<'a>) -> Result<Self, DecodeError> {
-                $type::read(reader).map_err(|e| e.into())
+                $type::read(reader)
+                    .map_err(DecodeErrorKind::ReaderError)
+                    .map_err(|e| e.context::<$type>())
             }
         }
         impl Encode for $type {

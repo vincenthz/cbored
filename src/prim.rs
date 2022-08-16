@@ -1,4 +1,4 @@
-use super::decode::{Decode, DecodeError};
+use super::decode::{Decode, DecodeError, DecodeErrorKind};
 use super::encode::Encode;
 use super::reader::Reader;
 use super::writer::Writer;
@@ -20,9 +20,10 @@ impl CborSlice {
         let result = <T>::decode(&mut r)
             .map(|_| unsafe { &*(&self.0 as *const [u8] as *const CborSliceOf<T>) })?;
         if !r.is_finished() {
-            return Err(DecodeError::ReaderNotTerminated {
+            return Err(DecodeErrorKind::ReaderNotTerminated {
                 remaining_bytes: r.remaining_bytes(),
-            });
+            }
+            .context::<Self>());
         }
         Ok(result)
     }
@@ -36,7 +37,10 @@ impl<'a> CborSlice {
     pub fn decode<T: Decode>(&'a self) -> Result<T, DecodeError> {
         let mut reader = self.reader();
         let t = <T>::decode(&mut reader)?;
-        reader.expect_finished()?;
+        reader
+            .expect_finished()
+            .map_err(DecodeErrorKind::ReaderError)
+            .map_err(|e| e.context::<T>())?;
         Ok(t)
     }
 }
@@ -84,7 +88,10 @@ impl CborData {
     pub fn decode<T: Decode>(&self) -> Result<T, DecodeError> {
         let mut reader = self.read();
         let t = <T>::decode(&mut reader)?;
-        reader.expect_finished()?;
+        reader
+            .expect_finished()
+            .map_err(DecodeErrorKind::ReaderError)
+            .map_err(|e| e.context::<T>())?;
         Ok(t)
     }
 }
