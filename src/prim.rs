@@ -54,7 +54,7 @@ pub struct CborData(pub(crate) Vec<u8>);
 /// A Validated CBOR slice of data containing the type T
 ///
 /// Call `.unserialize()` to get the inner T type
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct CborDataOf<T>(PhantomData<T>, pub(crate) Vec<u8>);
 
 impl<T> Clone for CborDataOf<T> {
