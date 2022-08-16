@@ -46,6 +46,18 @@ pub struct FlatPoint {
 }
 
 #[derive(CborRepr)]
+#[cborrepr(structure = "mapint")]
+// serialized as : MAP(2) { UINT(0) => UINT, UINT(1) => UINT }
+//            or : MAP(3) { UINT(0) => UINT, UINT(1) => UINT, UINT(2) => UINT }
+pub struct FlatPoint {
+    #[cborrepr(mandatory)]
+    x: u32,
+    #[cborrepr(mandatory)]
+    y: u32,
+    z: Option<u32>
+}
+
+#[derive(CborRepr)]
 #[cborrepr(enumtype = "tagvariant")]
 // serialized as
 // * One : ARRAY(2) [ UINT(0), ARRAY(2) [UINT, UINT] ]

@@ -23,7 +23,7 @@ impl FromStr for FieldVariantType {
 pub(crate) enum StructureType {
     Flat,
     Array,
-    Map,
+    MapInt,
 }
 
 impl FromStr for StructureType {
@@ -33,7 +33,7 @@ impl FromStr for StructureType {
         match s {
             "flat" => Ok(StructureType::Flat),
             "array" => Ok(StructureType::Array),
-            "map" => Ok(StructureType::Map),
+            "mapint" => Ok(StructureType::MapInt),
             _ => Err(format!("unrecognized structure type {}", s)),
         }
     }
@@ -63,6 +63,7 @@ pub(crate) enum Attr {
     EnumType(EnumType),
     Tag(u64),
     VariantStartsAt(usize),
+    SkipKey(u64),
     //EnumTry(EnumTryType),
 }
 
@@ -101,13 +102,20 @@ pub(crate) fn parse_attr(meta: &Meta) -> Vec<Attr> {
                                     let i = parse_int(&v.lit);
                                     output.push(Attr::VariantStartsAt(i as usize));
                                 }
+                                "skipkey" => {
+                                    let i = parse_int(&v.lit);
+                                    output.push(Attr::SkipKey(i));
+                                }
                                 _ => {
                                     panic!("unknown key \"{:?}\"", keys[0])
                                 }
                             }
                         }
-                        _ => {
-                            panic!("uugh")
+                        Meta::Path(p) => {
+                            panic!("uugh meta::path {:?}", p.get_ident().map(|p| p.to_string()))
+                        }
+                        Meta::List(_) => {
+                            panic!("uugh meta::list")
                         }
                     },
                     _ => {
@@ -129,17 +137,20 @@ pub(crate) fn parse_attr(meta: &Meta) -> Vec<Attr> {
 #[derive(Clone)]
 pub(crate) enum FieldAttr {
     Variant(FieldVariantType),
+    Mandatory,
 }
 
 #[derive(Clone)]
 pub(crate) struct FieldAttrs {
     pub(crate) variant: FieldVariantType,
+    pub(crate) mandatory: bool,
 }
 
 impl Default for FieldAttrs {
     fn default() -> Self {
         FieldAttrs {
             variant: FieldVariantType::Simple,
+            mandatory: false,
         }
     }
 }
@@ -148,6 +159,7 @@ impl FieldAttrs {
     pub fn merge(mut self, attr: &FieldAttr) -> Self {
         match attr {
             FieldAttr::Variant(vty) => self.variant = *vty,
+            FieldAttr::Mandatory => self.mandatory = true,
         }
         self
     }
@@ -179,9 +191,20 @@ pub(crate) fn parse_field_attr(meta: &Meta) -> Vec<FieldAttr> {
                                 }
                             }
                         }
-                        _ => {
-                            panic!("uugh")
+                        Meta::List(_) => {
+                            panic!("uugh list")
                         }
+                        Meta::Path(p) => match p.get_ident().map(|p| p.to_string()) {
+                            None => panic!("field attribute path empty"),
+                            Some(s) => match s.as_str() {
+                                "mandatory" => {
+                                    output.push(FieldAttr::Mandatory);
+                                }
+                                _ => {
+                                    panic!("unknown field attribute path \"{:?}\"", s)
+                                }
+                            },
+                        },
                     },
                     _ => {
                         panic!("attribute list not supported")

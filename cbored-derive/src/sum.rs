@@ -22,6 +22,9 @@ impl EnumAttrs {
                     Attr::Tag(_) | Attr::Structure(_) => {
                         panic!("enum does not support struct type attribute")
                     }
+                    Attr::SkipKey(_) => {
+                        panic!("enum does not support skip key attribute")
+                    }
                     Attr::EnumType(ty) => enumtype = ty,
                     Attr::VariantStartsAt(v) => variant_starts_at = v,
                 }
@@ -176,10 +179,10 @@ pub(crate) fn derive_enum_de(
     let use_array = attrs.enumtype != EnumType::EnumInt;
     let de_array = if use_array {
         quote! {
-            let array = reader.array()?;
+            let array = reader.array().map_err(::cbored::DecodeErrorKind::ReaderError).map_err(|e| e.context::<Self>())?;
             match array.len() {
                 0 => {
-                    return Err(::cbored::DecodeError::Custom(format!("expecting at least 1 item in variant encoding of {}", #name_type)));
+                    return Err(::cbored::DecodeErrorKind::Custom(format!("expecting at least 1 item in variant encoding of {}", #name_type)).context::<Self>());
                 }
                 _ => {}
             };
@@ -192,8 +195,6 @@ pub(crate) fn derive_enum_de(
             let variant: usize = variant as usize;
         }
     };
-
-    let name_variant_debug_key = quote::format_ident!("{}_variant", name_type);
 
     for (variant_index, variant) in st.variants.iter().enumerate() {
         let ident = &variant.ident;
@@ -208,7 +209,14 @@ pub(crate) fn derive_enum_de(
         let de_array_lencheck = if use_array {
             quote! {
                 if array.len() != #nb_items + 1 {
-                    return Err(::cbored::DecodeError::Custom(format!("wrong number of items for {}::{} got {} expected {}", #name_type, #variant_name, array.len(), #nb_items + 1)));
+                    return Err(::cbored::DecodeErrorKind::Custom(
+                        format!("wrong number of items for {}::{} got {} expected {}",
+                            #name_type,
+                            #variant_name,
+                            array.len(),
+                            #nb_items + 1)
+                        ).context::<Self>()
+                    );
                 }
             }
         } else {
@@ -226,13 +234,14 @@ pub(crate) fn derive_enum_de(
                         .iter()
                         .enumerate()
                         .map(|(fidx, fname)| {
+                            let fname_str = format!("{}", fname);
                             if use_array {
                                 quote! {
-                                    let #fname = array[#fidx + 1].decode()?;
+                                    let #fname = array[#fidx + 1].decode().map_err(|e| e.push_str(#fname_str).push_str(#variant_name).push::<Self>())?;
                                 }
                             } else {
                                 quote! {
-                                    let #fname = reader.decode()?;
+                                    let #fname = reader.decode().decode().map_err(|e| e.push_str(#fname_str).push_str(#variant_name).push::<Self>())?;
                                 }
                             }
                         })
@@ -248,13 +257,14 @@ pub(crate) fn derive_enum_de(
                     let de_fields = field_names
                         .iter()
                         .map(|(fidx, ident)| {
+                            let fname_str = format!("{}", ident);
                             if use_array {
                                 quote! {
-                                    let #ident = array[#fidx + 1].decode()?;
+                                    let #ident = array[#fidx + 1].decode().map_err(|e| e.push_str(#fname_str).push_str(#variant_name).push::<Self>())?;
                                 }
                             } else {
                                 quote! {
-                                    let #ident = reader.decode()?;
+                                    let #ident = reader.decode().map_err(|e| e.push_str(#fname_str).push_str(#variant_name).push::<Self>())?;
                                 }
                             }
                         })
@@ -274,13 +284,9 @@ pub(crate) fn derive_enum_de(
         //     }
         let de_branch = quote! {
             #variant_number => {
-                let span = tracing::span!(tracing::Level::INFO, #variant_name, #name_variant_debug_key = #variant_number);
-                {
-                    let _enter = span.enter();
-                    #de_array_lencheck
-                    #( #de_fields )*
-                    Ok(Self::#ident #parameters)
-                }
+                #de_array_lencheck
+                #( #de_fields )*
+                Ok(Self::#ident #parameters)
             }
         };
         de_branches.push(de_branch);
@@ -291,7 +297,7 @@ pub(crate) fn derive_enum_de(
         match variant {
             #( #de_branches )*
             _ => {
-                return Err(::cbored::DecodeError::Custom(format!("{} variant number {} is not known", #name_type, variant)));
+                return Err(::cbored::DecodeErrorKind::Custom(format!("{} variant number {} is not known", #name_type, variant)).context::<Self>());
             }
         }
     };
