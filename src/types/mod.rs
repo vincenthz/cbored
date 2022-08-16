@@ -68,7 +68,7 @@ impl Type {
 }
 
 /// One CBOR Data element with references to the data
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Data<'a> {
     Positive(Positive),
     Negative(Negative),
@@ -86,7 +86,7 @@ pub enum Data<'a> {
 }
 
 /// One CBOR Data element with owned data
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DataOwned {
     Positive(Positive),
     Negative(Negative),

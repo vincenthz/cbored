@@ -1,15 +1,15 @@
 use super::super::header::{Value, Value8};
 
 /// CBOR Positive value
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Positive(pub(crate) Value);
 
 /// CBOR Negative value
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Negative(pub(crate) Value);
 
 /// CBOR Byte value
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Byte(pub(crate) Value8);
 
 /// CBOR constants (False/True/Null/Undefined)

@@ -1,7 +1,7 @@
 use super::lead::{u5, Content, ContentStream, IndirectLen, IndirectValue, Lead};
 use super::types::*;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Value {
     Imm(u5),
     U8(u8),
@@ -10,7 +10,7 @@ pub enum Value {
     U64(u64),
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Value8 {
     Imm(u5),
     U8(u8),

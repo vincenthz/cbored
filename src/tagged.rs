@@ -3,23 +3,23 @@
 use super::*;
 
 /// CBOR Standard Date/Time String (Tag 0)
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StandardDateTime(TagValue, TextOwned);
 
 /// CBOR Positive Bignum (Tag 2)
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PositiveBignum(TagValue, BytesOwned);
 
 /// CBOR Negative Bignum (Tag 3)
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NegativeBignum(TagValue, BytesOwned);
 
 /// CBOR data in CBOR (Tag 24)
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EncodedCBOR(TagValue, BytesOwned);
 
 /// CBOR Rational (Tag 30)
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RationalNumber {
     tag: TagValue,
     len_encoding: StructureLength,
@@ -27,7 +27,7 @@ pub struct RationalNumber {
     denominator: RationalDenominator,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum RationalNumerator {
     Positive(Positive),
     Negative(Negative),
@@ -35,7 +35,7 @@ pub enum RationalNumerator {
     NegativeBignum(NegativeBignum),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum RationalDenominator {
     Positive(Positive),
     PositiveBignum(PositiveBignum),

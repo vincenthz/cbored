@@ -1,47 +1,47 @@
 use super::super::header::Value;
 
 /// CBOR Bytestream (indefinite and definite) with reference to the bytes
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Bytes<'a> {
     Imm(BytesData<'a>),
     Chunks(Vec<BytesData<'a>>),
 }
 
 /// CBOR Bytestream (indefinite and definite) with owned bytes
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BytesOwned {
     Imm(BytesDataOwned),
     Chunks(Vec<BytesDataOwned>),
 }
 
 /// CBOR Bytestream reference to a chunk of byte
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BytesData<'a>(pub(crate) Value, pub(crate) &'a [u8]);
 
 /// CBOR Bytestream owned chunk of byte
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BytesDataOwned(pub(crate) Value, pub(crate) Vec<u8>);
 
 /// CBOR Text (UTF-8) (indefinite and definite) with reference to text chunk
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Text<'a> {
     Imm(TextData<'a>),
     Chunks(Vec<TextData<'a>>),
 }
 
 /// CBOR Text (UTF-8) (indefinite and definite) with owned text chunk
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TextOwned {
     Imm(TextDataOwned),
     Chunks(Vec<TextDataOwned>),
 }
 
 /// CBOR Text chunk with reference to the chunk of utf8 sequence
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TextData<'a>(pub(crate) Value, pub(crate) &'a str);
 
 /// CBOR Text chunk with owned chunk of utf8 sequence
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TextDataOwned(pub(crate) Value, pub(crate) String);
 
 impl<'a> Bytes<'a> {

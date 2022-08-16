@@ -1,5 +1,5 @@
 /// CBOR Float (FP16, FP32, FP64)
-#[derive(Clone, Debug, Copy)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq)]
 pub enum Float {
     /// Half Precision IEEE754 (2 bytes)
     FP16(u16),

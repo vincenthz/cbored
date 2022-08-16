@@ -1,4 +1,4 @@
-use super::super::decode::{Decode, DecodeError};
+use super::super::decode::{Decode, DecodeError, DecodeErrorKind};
 use super::super::encode::Encode;
 use super::super::header::Value;
 use super::super::prim::{CborData, CborSlice};
@@ -6,7 +6,7 @@ use super::super::reader::{Reader, ReaderError};
 use super::super::writer::Writer;
 use std::borrow::{Borrow, ToOwned};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StructureLength {
     Indefinite,
     Definite(Value),
@@ -37,14 +37,14 @@ impl From<u64> for StructureLength {
 }
 
 /// CBOR Array with references to elements
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Array<'a> {
     pub(crate) len_encoding: StructureLength,
     pub(crate) elements: Vec<&'a CborSlice>,
 }
 
 /// CBOR Array with owned elements
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ArrayOwned {
     pub(crate) len_encoding: StructureLength,
     pub(crate) elements: Vec<CborData>,
@@ -56,32 +56,32 @@ pub struct ArrayBuilder {
 }
 
 /// CBOR Map with references to keys and values
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Map<'a> {
     pub(crate) len_encoding: StructureLength,
     pub(crate) elements: Vec<(&'a CborSlice, &'a CborSlice)>,
 }
 
 /// CBOR Map with owned keys and values
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MapOwned {
     pub(crate) len_encoding: StructureLength,
     pub(crate) elements: Vec<(CborData, CborData)>,
 }
 
 /// CBOR Tag Value in a Tag
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TagValue(pub(crate) Value);
 
 /// CBOR Tag with reference to the tagged element
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Tag<'a> {
     pub(crate) tag_val: TagValue,
     pub(crate) data: &'a CborSlice,
 }
 
 /// CBOR Tag with owned tagged element
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TagOwned {
     pub(crate) tag_val: TagValue,
     pub(crate) data: CborData,

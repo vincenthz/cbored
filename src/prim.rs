@@ -5,7 +5,7 @@ use super::writer::Writer;
 use std::{borrow::Borrow, marker::PhantomData};
 
 /// A Validated CBOR slice of data
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct CborSlice(pub(crate) [u8]);
 
 impl<'a> AsRef<[u8]> for &'a CborSlice {
@@ -48,7 +48,7 @@ impl<'a> CborSlice {
 pub struct CborSliceOf<T>(PhantomData<T>, pub(crate) [u8]);
 
 /// A Validated CBOR slice of data
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CborData(pub(crate) Vec<u8>);
 
 /// A Validated CBOR slice of data containing the type T
