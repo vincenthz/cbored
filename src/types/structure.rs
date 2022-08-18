@@ -88,14 +88,18 @@ pub struct TagOwned {
 }
 
 impl<'a> Array<'a> {
+    /// Return the number of CBOR element in this Array
     pub fn len(&self) -> usize {
         self.elements.len()
     }
 
+    /// Get an iterator to the reader of each element of the array
     pub fn iter(&'a self) -> impl Iterator<Item = Reader<'a>> {
         self.elements.iter().map(|v| v.reader())
     }
 
+    /// Try to turn an array of CBOR element into a homogenous Vec of T,
+    /// where each reader is processed with the function f in parameter
     pub fn to_vec<F, T: Decode>(&self, f: F) -> Result<Vec<T>, DecodeErrorKind>
     where
         F: for<'b> Fn(&mut Reader<'b>) -> Result<T, DecodeErrorKind>,
@@ -109,6 +113,10 @@ impl<'a> Array<'a> {
         Ok(output)
     }
 
+    /// Turn a borrow Array into an Owned array
+    ///
+    /// Effectively all elements (represented by their slice `CborSlice`) is turn into owned
+    /// data (`CborData`)
     pub fn owned(&self) -> ArrayOwned {
         ArrayOwned {
             len_encoding: self.len_encoding.clone(),
@@ -122,10 +130,12 @@ impl<'a> Array<'a> {
 }
 
 impl ArrayOwned {
+    /// Return the number of CBOR element in this Array
     pub fn len(&self) -> usize {
         self.elements.len()
     }
 
+    /// Get an iterator to the reader of each element of the array
     pub fn iter<'a>(&'a self) -> impl Iterator<Item = Reader<'a>> {
         self.elements
             .iter()
@@ -133,6 +143,8 @@ impl ArrayOwned {
             .map(|v: &'a CborSlice| v.reader())
     }
 
+    /// Try to turn an array of CBOR element into a homogenous Vec of T,
+    /// where each reader is processed with the function f in parameter
     pub fn to_vec<'a, F, T: Decode>(&'a self, f: F) -> Result<Vec<T>, DecodeErrorKind>
     where
         F: Fn(&mut Reader<'a>) -> Result<T, DecodeErrorKind>,
@@ -146,6 +158,10 @@ impl ArrayOwned {
         Ok(output)
     }
 
+    /// Turn a Owned array into a Borrowed Array
+    ///
+    /// Effectively all elements (represented by their data `CborData`) is turn into borrowed slice
+    /// (`CborSlice`)
     pub fn borrow<'a>(&'a self) -> Array<'a> {
         Array {
             len_encoding: self.len_encoding.clone(),
@@ -169,12 +185,14 @@ impl ArrayBuilder {
         self.elements.push(data)
     }
 
+    /// Add a Encoded T in the array.
     pub fn append_encodable<T: Encode>(&mut self, t: &T) {
         let mut writer = Writer::new();
         writer.encode(t);
         self.append(writer.finalize_data())
     }
 
+    /// Terminate the array into 1 finite array
     pub fn finite(self) -> ArrayOwned {
         ArrayOwned {
             len_encoding: StructureLength::from(self.elements.len() as u64),
@@ -182,6 +200,7 @@ impl ArrayBuilder {
         }
     }
 
+    /// Terminate the array into indefinite array
     pub fn indefinite(self) -> ArrayOwned {
         ArrayOwned {
             len_encoding: StructureLength::Indefinite,
@@ -207,22 +226,29 @@ impl std::ops::Index<usize> for ArrayOwned {
 }
 
 impl<'a> Map<'a> {
+    /// Return the number of CBOR key-value pairs in this Map
     pub fn len(&self) -> usize {
         self.elements.len()
     }
 
+    /// Get an iterator to the reader of each pair of element of the Map
     pub fn iter(&'a self) -> impl Iterator<Item = (Reader<'a>, Reader<'a>)> {
         self.elements.iter().map(|(k, v)| (k.reader(), v.reader()))
     }
 
+    /// Get an iterator to the reader of each keys of the Map
     pub fn keys(&'a self) -> impl Iterator<Item = Reader<'a>> {
         self.elements.iter().map(|(k, _v)| (k.reader()))
     }
 
+    /// Get an iterator to the reader of each values of the Map
     pub fn values(&'a self) -> impl Iterator<Item = Reader<'a>> {
         self.elements.iter().map(|(_k, v)| (v.reader()))
     }
 
+    /// Try to turn a map of pair of CBOR elements into a homogenous Vec of (K,V),
+    /// where each key reader is processed with the `f` decoding function
+    /// and each value reader is processed with the `g` decoding function
     pub fn to_vec<F, G, K: Decode, V: Decode>(
         &self,
         f: F,
@@ -244,6 +270,7 @@ impl<'a> Map<'a> {
         Ok(output)
     }
 
+    /// Turn a Map into an Owned Map
     pub fn owned(&self) -> MapOwned {
         MapOwned {
             len_encoding: self.len_encoding.clone(),
@@ -257,6 +284,7 @@ impl<'a> Map<'a> {
 }
 
 impl MapOwned {
+    /// Return the number of CBOR key-value pairs in this Map
     pub fn len(&self) -> usize {
         self.elements.len()
     }
