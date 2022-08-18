@@ -1,3 +1,7 @@
+# 0.3.1 (2022-08-18)
+
+- dependency mismatch between cbored and cbored-derive
+
 # 0.3.0 (2022-08-18)
 
 - add new `enumtype` strategy for enums, to allow the serialization to be based on the cbor type of the object
