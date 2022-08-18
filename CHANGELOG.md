@@ -1,3 +1,11 @@
+# 0.3.0 (2022-08-18)
+
+- add new `enumtype` strategy for enums, to allow the serialization to be based on the cbor type of the object
+- add new `array_lastopt` strategy for struct, to allow optional last field
+- add new `mapint` strategy for struct, serializing record using their index from start of the structure as integral index for a map
+- add new methods to handle negative values
+- add new Scalar type to handle mixed positive/negative type
+
 # 0.2.0 (2022-08-16)
 
 - add record contextual ability for `DecodeError`
