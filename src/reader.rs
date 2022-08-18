@@ -246,6 +246,20 @@ impl<'a> Reader<'a> {
         Ok(content)
     }
 
+    pub fn scalar(&mut self) -> Result<Scalar, ReaderError> {
+        let (hdr, advance) = self.header()?;
+        let content = match hdr {
+            Header::Positive(pos) => Ok(Scalar::Positive(pos)),
+            Header::Negative(neg) => Ok(Scalar::Negative(neg)),
+            _ => Err(ReaderError::WrongExpectedTypes {
+                expected: &[Type::Positive, Type::Negative],
+                got: hdr.to_type(),
+            }),
+        }?;
+        self.reader.advance(advance);
+        Ok(content)
+    }
+
     pub fn byte(&mut self) -> Result<Byte, ReaderError> {
         let (hdr, advance) = self.header()?;
         let content = matches_type!(hdr, Type::Byte, Header::Byte)?;
