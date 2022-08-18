@@ -103,28 +103,30 @@ pub(crate) fn derive_struct_se(
     let se_body = match &field_names {
         // Generate output for a standard record
         StructOutput::Named(field_names) => {
-            let mut se_bodies = Vec::new();
-
-            for (field_name, field_attrs) in field_names.iter() {
-                let se_body = if field_attrs.variant == FieldVariantType::Vec {
+            let mut field_bodies = Vec::new();
+            let last_is_opt = if attrs.structure_type == StructureType::ArrayLastOpt {
+                true
+            } else {
+                false
+            };
+            for (field_idx, (field_name, _field_attrs)) in field_names.iter().enumerate() {
+                let field_body = if last_is_opt && field_idx == field_names.len() - 1 {
                     quote! {
-                        writer.array_build(::cbored::StructureLength::from(self.#field_name.len() as u64), |iwriter| {
-                            for e in self.#field_name.iter() {
-                                iwriter.encode(e);
-                            }
-                        });
-                        //writer.encode(&self.#field_name);
+                        match &self.#field_name {
+                            None => (),
+                            Some(v) => writer.encode(v),
+                        };
                     }
                 } else {
                     quote! {
                         writer.encode(&self.#field_name);
                     }
                 };
-                se_bodies.push(se_body);
+                field_bodies.push(field_body);
             }
 
             quote! {
-                #( #se_bodies )*
+                #( #field_bodies )*
             }
         }
         // Generate output for a N-tuple
@@ -158,6 +160,19 @@ pub(crate) fn derive_struct_se(
                     });
                 }
             }
+            StructureType::ArrayLastOpt => {
+                let last_field = match &field_names {
+                    // Generate output for a standard record
+                    StructOutput::Named(field_names) => field_names.last().unwrap().0.clone(),
+                    StructOutput::Unnamed(_) => todo!(),
+                };
+                quote! {
+                    let nb_actual_items = (#nb_items as u64 - 1) + match &self.#last_field { None => 0, Some(_) => 1 };
+                    writer.array_build(::cbored::StructureLength::from(nb_actual_items), |writer| {
+                        #se_body
+                    });
+                }
+            }
             StructureType::MapInt => {
                 let mut fixed = 0u64;
                 let mut len_for_optionals = Vec::new();
@@ -183,7 +198,7 @@ pub(crate) fn derive_struct_se(
                             }
                             let abs_index = field_index as u64 + rel_index;
 
-                            if field_attrs.mandatory {
+                            if field_attrs.mandatory_map {
                                 fields_write_map.push(quote! {
                                     writer.encode(&(#abs_index as u64));
                                     writer.encode(&self.#field_name);
@@ -228,8 +243,7 @@ pub(crate) fn derive_struct_se(
                 panic!("cannot support tag on flat structure with more than 1 element")
             }
             quote! {
-                let tag_val = ::cbored::StructureLength::from(#n as u64);
-                writer.tag_build(tag_val, |writer| { #se_body });
+                writer.tag_build(::cbored::TagValue::from_u64(#n as u64), |writer| { #se_body });
             }
         }
     };
@@ -239,7 +253,7 @@ pub(crate) fn derive_struct_se(
 
 pub enum DeStructure {
     Flat,
-    Array,
+    Array { last_optional: bool },
     MapInt,
 }
 
@@ -260,25 +274,25 @@ pub(crate) fn derive_struct_de(
     // * input/output:
     //   * 'reader' which is CBOR reader, and replace by another 'reader' conditionally (when it's tagged)
     let (tag_wrapper, tag_structure) = match attrs.tag {
-        None => (quote! {}, None),
+        None => (quote! {}, false),
         Some(n) => (
             quote! {
                 let tag = reader
                     .tag()
                     .map_err(::cbored::DecodeErrorKind::ReaderError)
-                    .map_err(|e| e.push::<Self>())?;
+                    .map_err(|e| e.context::<Self>())?;
                 match tag.value() {
                     read_tag if read_tag == #n => {}
                     read_tag => {
                         return Err(::cbored::DecodeErrorKind::ReaderError(::cbored::ReaderError::WrongExpectedTag {
                             expected: #n,
                             got: read_tag,
-                        }).push::<Self>());
+                        }).context::<Self>());
                     }
                 };
-                let reader = tag.data().reader();
+                //let reader = tag.data().reader();
             },
-            Some(quote::format_ident!("tag")),
+            true,
         ),
     };
 
@@ -295,33 +309,49 @@ pub(crate) fn derive_struct_de(
     //   * 'array' which is CBOR Array if StructureType::Array
     let (prelude_sty_de, structure) = match attrs.structure_type {
         StructureType::Flat => (quote! {}, DeStructure::Flat),
-        StructureType::Array => {
-            let r = match tag_structure {
-                None => {
-                    quote! { let array = reader.array().map_err(::cbored::DecodeErrorKind::ReaderError).map_err(|e| e.context::<Self>())?; }
-                }
-                Some(tag_name) => {
-                    quote! { let array = #tag_name.read_data(|reader| reader.array())?; }
-                }
-            };
-            (
+        StructureType::Array | StructureType::ArrayLastOpt => {
+            let r = if tag_structure {
                 quote! {
-                    #r
-                    if array.len() != #nb_items {
-                        return Err(::cbored::DecodeErrorKind::Custom(format!("wrong number of items got {} expected {}", array.len(), #nb_items)).context::<Self>());
-                    }
-                },
-                DeStructure::Array,
-            )
+                    #tag_wrapper
+                    let array = tag.read_data(|reader| reader.array()).map_err(::cbored::DecodeErrorKind::ReaderError).map_err(|e| e.context::<Self>())?;
+                }
+            } else {
+                quote! { let array = reader.array().map_err(::cbored::DecodeErrorKind::ReaderError).map_err(|e| e.context::<Self>())?; }
+            };
+            if attrs.structure_type == StructureType::ArrayLastOpt {
+                (
+                    quote! {
+                        #r
+                        if array.len() != #nb_items && array.len() != #nb_items - 1 {
+                            return Err(::cbored::DecodeErrorKind::Custom(format!("wrong number of items got {} expected {} or {}", array.len(), #nb_items, #nb_items - 1)).context::<Self>());
+                        }
+                    },
+                    DeStructure::Array {
+                        last_optional: true,
+                    },
+                )
+            } else {
+                (
+                    quote! {
+                        #r
+                        if array.len() != #nb_items {
+                            return Err(::cbored::DecodeErrorKind::Custom(format!("wrong number of items got {} expected {}", array.len(), #nb_items)).context::<Self>());
+                        }
+                    },
+                    DeStructure::Array {
+                        last_optional: false,
+                    },
+                )
+            }
         }
         StructureType::MapInt => {
-            let r = match tag_structure {
-                None => {
-                    quote! { let map = reader.map().map_err(::cbored::DecodeErrorKind::ReaderError).map_err(|e| e.context::<Self>())?; }
+            let r = if tag_structure {
+                quote! {
+                    #tag_wrapper
+                    let map = tag.read_data(|reader| reader.map()).map_err(::cbored::DecodeErrorKind::ReaderError).map_err(|e| e.context::<Self>())?;
                 }
-                Some(tag_name) => {
-                    quote! { let map = #tag_name.read_data(|reader| reader.map())?; }
-                }
+            } else {
+                quote! { let map = reader.map().map_err(::cbored::DecodeErrorKind::ReaderError).map_err(|e| e.context::<Self>())?; }
             };
             (
                 quote! {
@@ -332,7 +362,7 @@ pub(crate) fn derive_struct_de(
         }
     };
 
-    let prelude_deser = quote! { #tag_wrapper #prelude_sty_de };
+    let prelude_deser = quote! { #prelude_sty_de };
 
     let mut de_bodies = Vec::new();
 
@@ -345,7 +375,7 @@ pub(crate) fn derive_struct_de(
                 .map(|x| x.0.clone())
                 .collect::<Vec<Ident>>();
             match structure {
-                DeStructure::Array => {
+                DeStructure::Array { last_optional } => {
                     // deserialize each named field
                     for (field_index, (field_name, field_attrs)) in
                         field_elements.iter().enumerate()
@@ -363,8 +393,18 @@ pub(crate) fn derive_struct_de(
                                 };
                             }
                         } else {
-                            quote! {
-                                let #field_name = array[#field_index].decode().map_err(|e| e.push_str(#field_name_str).push::<Self>())?;
+                            if last_optional && field_index == field_elements.len() - 1 {
+                                quote! {
+                                    let #field_name = if array.len() == #field_index - 1 {
+                                        Some(array[#field_index].decode().map_err(|e| e.push_str(#field_name_str).push::<Self>())?)
+                                    } else {
+                                        None
+                                    };
+                                }
+                            } else {
+                                quote! {
+                                    let #field_name = array[#field_index].decode().map_err(|e| e.push_str(#field_name_str).push::<Self>())?;
+                                }
                             }
                         };
                         de_bodies.push(de_body);
@@ -411,7 +451,7 @@ pub(crate) fn derive_struct_de(
                         keydefs.push(keydef);
                         keyfields.push(keyfield);
 
-                        let key_mandatory = field_attrs.mandatory;
+                        let key_mandatory = field_attrs.mandatory_map;
 
                         if key_mandatory {
                             let mandatory_key = quote! {
@@ -486,7 +526,7 @@ pub(crate) fn derive_struct_de(
             for (field_index, field_name) in field_indexes.iter().enumerate() {
                 let field_name_str = format!("{}", field_name);
                 let de_body = match structure {
-                    DeStructure::Array => quote! {
+                    DeStructure::Array { last_optional: _ } => quote! {
                         let #field_name = array[#field_index].decode().map_err(|e| e.push_str(#field_name_str))?;
                     },
                     DeStructure::MapInt => {

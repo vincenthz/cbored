@@ -38,6 +38,15 @@ pub struct Point {
 }
 
 #[derive(CborRepr)]
+#[cborrepr(structure = "array_lastopt")]
+// serialized as : ARRAY(2) [UINT, UINT]
+//            or : ARRAY(1) [UINT]
+pub struct Point {
+    x: u32,
+    y: Option<u32>,
+}
+
+#[derive(CborRepr)]
 #[cborrepr(structure = "flat")]
 // serialized as : UINT, UINT
 pub struct FlatPoint {
@@ -78,6 +87,19 @@ pub enum Code {
     Code2,
     Code3,
 }
+
+#[derive(CborRepr)]
+#[cborrepr(enumtype = "enumtype")]
+// serialized as
+// * Empty : NULL
+// * One   : UINT
+pub enum OneOrEmpty {
+    #[cborrepr(cbortype = "null")]
+    Empty,
+    #[cborrepr(cbortype = "positive")]
+    One(u64),
+}
+
 ```
 
 

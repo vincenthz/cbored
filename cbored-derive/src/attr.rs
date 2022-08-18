@@ -20,9 +20,40 @@ impl FromStr for FieldVariantType {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum FieldCborType {
+    Positive,
+    Negative,
+    Array,
+    Map,
+    Tag,
+    Bytes,
+    Text,
+    Null,
+}
+
+impl FromStr for FieldCborType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "positive" => Ok(FieldCborType::Positive),
+            "negative" => Ok(FieldCborType::Negative),
+            "array" => Ok(FieldCborType::Array),
+            "map" => Ok(FieldCborType::Map),
+            "tag" => Ok(FieldCborType::Tag),
+            "text" => Ok(FieldCborType::Text),
+            "bytes" => Ok(FieldCborType::Bytes),
+            "null" => Ok(FieldCborType::Null),
+            _ => Err(format!("unrecognized field variant type {}", s)),
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum StructureType {
     Flat,
     Array,
+    ArrayLastOpt,
     MapInt,
 }
 
@@ -33,6 +64,7 @@ impl FromStr for StructureType {
         match s {
             "flat" => Ok(StructureType::Flat),
             "array" => Ok(StructureType::Array),
+            "array_lastopt" => Ok(StructureType::ArrayLastOpt),
             "mapint" => Ok(StructureType::MapInt),
             _ => Err(format!("unrecognized structure type {}", s)),
         }
@@ -43,6 +75,7 @@ impl FromStr for StructureType {
 pub(crate) enum EnumType {
     TagVariant,
     EnumInt,
+    EnumType,
 }
 
 impl FromStr for EnumType {
@@ -52,6 +85,7 @@ impl FromStr for EnumType {
         match s {
             "tagvariant" => Ok(EnumType::TagVariant),
             "enumint" => Ok(EnumType::EnumInt),
+            "enumtype" => Ok(EnumType::EnumType),
             _ => Err(format!("unrecognized enum type {}", s)),
         }
     }
@@ -64,7 +98,6 @@ pub(crate) enum Attr {
     Tag(u64),
     VariantStartsAt(usize),
     SkipKey(u64),
-    //EnumTry(EnumTryType),
 }
 
 pub(crate) fn parse_attr(meta: &Meta) -> Vec<Attr> {
@@ -137,20 +170,26 @@ pub(crate) fn parse_attr(meta: &Meta) -> Vec<Attr> {
 #[derive(Clone)]
 pub(crate) enum FieldAttr {
     Variant(FieldVariantType),
+    Optional,
     Mandatory,
+    CborType(FieldCborType),
 }
 
 #[derive(Clone)]
 pub(crate) struct FieldAttrs {
     pub(crate) variant: FieldVariantType,
-    pub(crate) mandatory: bool,
+    pub(crate) mandatory_map: bool,
+    pub(crate) optional_vec: bool,
+    pub(crate) cbor_type: Option<FieldCborType>,
 }
 
 impl Default for FieldAttrs {
     fn default() -> Self {
         FieldAttrs {
             variant: FieldVariantType::Simple,
-            mandatory: false,
+            mandatory_map: false,
+            optional_vec: false,
+            cbor_type: None,
         }
     }
 }
@@ -159,7 +198,9 @@ impl FieldAttrs {
     pub fn merge(mut self, attr: &FieldAttr) -> Self {
         match attr {
             FieldAttr::Variant(vty) => self.variant = *vty,
-            FieldAttr::Mandatory => self.mandatory = true,
+            FieldAttr::Mandatory => self.mandatory_map = true,
+            FieldAttr::Optional => self.optional_vec = true,
+            FieldAttr::CborType(ty) => self.cbor_type = Some(*ty),
         }
         self
     }
@@ -186,6 +227,12 @@ pub(crate) fn parse_field_attr(meta: &Meta) -> Vec<FieldAttr> {
                                         .expect("Valid enum type");
                                     output.push(FieldAttr::Variant(variant_type));
                                 }
+                                "cbortype" => {
+                                    let s = parse_string(&v.lit);
+                                    let variant_type = FieldCborType::from_str(s.as_str())
+                                        .expect("Valid enum type");
+                                    output.push(FieldAttr::CborType(variant_type));
+                                }
                                 _ => {
                                     panic!("unknown field attribute key \"{:?}\"", keys[0])
                                 }
@@ -199,6 +246,9 @@ pub(crate) fn parse_field_attr(meta: &Meta) -> Vec<FieldAttr> {
                             Some(s) => match s.as_str() {
                                 "mandatory" => {
                                     output.push(FieldAttr::Mandatory);
+                                }
+                                "optional" => {
+                                    output.push(FieldAttr::Optional);
                                 }
                                 _ => {
                                     panic!("unknown field attribute path \"{:?}\"", s)
