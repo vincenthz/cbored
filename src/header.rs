@@ -171,4 +171,26 @@ impl Header {
     }
 }
 
-impl Header {}
+impl Value8 {
+    pub fn to_u8(self) -> u8 {
+        match self {
+            Value8::Imm(u) => u as u8,
+            Value8::U8(u) => u as u8,
+        }
+    }
+
+    pub fn canonical(v: u8) -> Self {
+        match v {
+            _ if v < 24 => Self::Imm(v as u8),
+            _ => Self::U8(v),
+        }
+    }
+
+    pub fn is_canonical(&self) -> bool {
+        match self {
+            // don't check if imm is < 24, as it shouldn't be allowed
+            Value8::Imm(_) => true,
+            Value8::U8(v) => *v >= 24,
+        }
+    }
+}
