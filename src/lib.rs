@@ -34,8 +34,8 @@ pub mod validate;
 pub use reader::{Reader, ReaderError};
 pub use writer::Writer;
 
-pub use decode::{Decode, DecodeError, DecodeErrorKind};
-pub use encode::Encode;
+pub use decode::{decode_vec, Decode, DecodeError, DecodeErrorKind};
+pub use encode::{encode_vec, Encode};
 
 pub use prim::{CborDataOf, CborSliceOf};
 pub use types::*;

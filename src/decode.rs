@@ -122,6 +122,25 @@ pub trait Decode: Sized {
     fn decode<'a>(reader: &mut Reader<'a>) -> Result<Self, DecodeError>;
 }
 
+/// Decode zero to many Ts in an array
+///
+/// this is identical to Array::to_vec, but has better error reporting
+/// and just assume that inner element use the decode implementation for
+/// the T type.
+pub fn decode_vec<'a, T: Decode>(reader: &mut Reader<'a>) -> Result<Vec<T>, DecodeError> {
+    let a = reader
+        .array()
+        .map_err(DecodeErrorKind::ReaderError)
+        .map_err(|e| e.context_str("Vec"))?;
+    let mut out = Vec::with_capacity(a.len());
+    for (i, mut inner_reader) in a.iter().enumerate() {
+        let v = <T>::decode(&mut inner_reader)
+            .map_err(|e| e.push_string(format!("{}", i)).push_str("Vec"))?;
+        out.push(v)
+    }
+    Ok(out)
+}
+
 macro_rules! assert_range {
     ($got:ident <= $max:literal) => {
         if $got > $max {
