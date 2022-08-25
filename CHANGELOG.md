@@ -1,3 +1,7 @@
+# 0.3.2 (2022-08-25)
+
+- add `encode_vec` and `decode_vec`
+
 # 0.3.1 (2022-08-18)
 
 - dependency mismatch between cbored and cbored-derive
