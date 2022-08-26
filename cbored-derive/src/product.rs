@@ -38,11 +38,17 @@ impl StructAttrs {
     }
 }
 
+pub struct Field {
+    index: usize,
+    name: Ident,
+    attrs: FieldAttrs,
+}
+
 pub(crate) enum StructOutput {
     /// contains the fields idents
-    Unnamed(Vec<Ident>),
+    Unnamed(Vec<Field>),
     /// contains a made up fields idents, sequenced incrementally from field{n}
-    Named(Vec<(Ident, FieldAttrs)>),
+    Named(Vec<Field>),
 }
 
 impl StructOutput {
@@ -55,6 +61,14 @@ impl StructOutput {
 }
 
 fn get_struct_naming(fields: &Fields) -> StructOutput {
+    fn attrs(attrs: &Vec<syn::Attribute>) -> FieldAttrs {
+        get_my_attributes(attrs)
+            .map(|a| parse_field_attr(&a.parse_meta().expect("field attr")))
+            .fold(FieldAttrs::default(), |acc, y| {
+                y.iter().fold(acc, |acc, y| acc.merge(y))
+            })
+    }
+
     match fields {
         Fields::Named(FieldsNamed {
             brace_token: _,
@@ -62,15 +76,11 @@ fn get_struct_naming(fields: &Fields) -> StructOutput {
         }) => {
             let names = named
                 .iter()
-                .map(|field| {
-                    (
-                        field.ident.clone().unwrap(),
-                        get_my_attributes(&field.attrs)
-                            .map(|a| parse_field_attr(&a.parse_meta().expect("field attr")))
-                            .fold(FieldAttrs::default(), |acc, y| {
-                                y.iter().fold(acc, |acc, y| acc.merge(y))
-                            }),
-                    )
+                .enumerate()
+                .map(|(index, field)| Field {
+                    index,
+                    name: field.ident.clone().unwrap(),
+                    attrs: attrs(&field.attrs),
                 })
                 .collect::<Vec<_>>();
             StructOutput::Named(names)
@@ -82,7 +92,11 @@ fn get_struct_naming(fields: &Fields) -> StructOutput {
             let indexes = unnamed
                 .iter()
                 .enumerate()
-                .map(|(i, _)| quote::format_ident!("field{}", i))
+                .map(|(i, fi)| Field {
+                    index: i,
+                    name: quote::format_ident!("field{}", i),
+                    attrs: attrs(&fi.attrs),
+                })
                 .collect();
             StructOutput::Unnamed(indexes)
         }
@@ -102,15 +116,20 @@ pub(crate) fn derive_struct_se(
 
     let se_body = match &field_names {
         // Generate output for a standard record
-        StructOutput::Named(field_names) => {
+        StructOutput::Named(fields) => {
             let mut field_bodies = Vec::new();
             let last_is_opt = if attrs.structure_type == StructureType::ArrayLastOpt {
                 true
             } else {
                 false
             };
-            for (field_idx, (field_name, _field_attrs)) in field_names.iter().enumerate() {
-                let field_body = if last_is_opt && field_idx == field_names.len() - 1 {
+            for field in fields.iter() {
+                let Field {
+                    index: field_idx,
+                    name: field_name,
+                    attrs: _,
+                } = &field;
+                let field_body = if last_is_opt && *field_idx == fields.len() - 1 {
                     quote! {
                         match &self.#field_name {
                             None => (),
@@ -130,10 +149,10 @@ pub(crate) fn derive_struct_se(
             }
         }
         // Generate output for a N-tuple
-        StructOutput::Unnamed(field_indexes) => {
+        StructOutput::Unnamed(fields) => {
             let mut se_bodies = Vec::new();
 
-            for (field_idx, _field_name) in field_indexes.iter().enumerate() {
+            for (field_idx, _field_name) in fields.iter().enumerate() {
                 let idx = syn::Index::from(field_idx);
                 let se_body = quote! {
                     writer.encode(&self.#idx);
@@ -163,7 +182,7 @@ pub(crate) fn derive_struct_se(
             StructureType::ArrayLastOpt => {
                 let last_field = match &field_names {
                     // Generate output for a standard record
-                    StructOutput::Named(field_names) => field_names.last().unwrap().0.clone(),
+                    StructOutput::Named(fields) => fields.last().unwrap().name.clone(),
                     StructOutput::Unnamed(_) => todo!(),
                 };
                 quote! {
@@ -185,18 +204,21 @@ pub(crate) fn derive_struct_se(
                     // Generate output for a standard record
                     StructOutput::Named(field_elements) => {
                         let mut rel_index = 0;
-                        for (field_index, (field_name, field_attrs)) in
-                            field_elements.iter().enumerate()
-                        {
+                        for field in field_elements.iter() {
+                            let Field {
+                                index: field_index,
+                                name: field_name,
+                                attrs: field_attrs,
+                            } = &field;
                             loop {
-                                let abs_index = field_index as u64 + rel_index;
+                                let abs_index = *field_index as u64 + rel_index;
                                 if attrs.skips.iter().any(|v| *v == abs_index) {
                                     rel_index += 1;
                                 } else {
                                     break;
                                 }
                             }
-                            let abs_index = field_index as u64 + rel_index;
+                            let abs_index = *field_index as u64 + rel_index;
 
                             if field_attrs.mandatory_map {
                                 fields_write_map.push(quote! {
@@ -224,7 +246,6 @@ pub(crate) fn derive_struct_se(
                         }
                     }
                 };
-                //let nb_values = #( #nb_value_field )+*;
                 quote! {
                     let nb_values : u64 = #fixed #( #len_for_optionals )* ;
                     writer.map_build(::cbored::StructureLength::from(nb_values), |writer| {
@@ -369,17 +390,21 @@ pub(crate) fn derive_struct_de(
     // create the quote that deserialize all the elements one by one
     let de_body = match field_names {
         // Generate output for a standard record
-        StructOutput::Named(field_elements) => {
-            let field_names = field_elements
+        StructOutput::Named(fields) => {
+            let field_names = fields
                 .iter()
-                .map(|x| x.0.clone())
+                .map(|x| x.name.clone())
                 .collect::<Vec<Ident>>();
             match structure {
                 DeStructure::Array { last_optional } => {
                     // deserialize each named field
-                    for (field_index, (field_name, field_attrs)) in
-                        field_elements.iter().enumerate()
-                    {
+                    for field in fields.iter() {
+                        let Field {
+                            index: field_index,
+                            name: field_name,
+                            attrs: field_attrs,
+                        } = &field;
+                        let field_index = *field_index;
                         let field_name_str = format!("{}", field_name);
                         let de_body = if field_attrs.variant == FieldVariantType::Vec {
                             quote! {
@@ -393,7 +418,7 @@ pub(crate) fn derive_struct_de(
                                 };
                             }
                         } else {
-                            if last_optional && field_index == field_elements.len() - 1 {
+                            if last_optional && field_index == fields.len() - 1 {
                                 quote! {
                                     let #field_name = if array.len() == #field_index - 1 {
                                         Some(array[#field_index].decode().map_err(|e| e.push_str(#field_name_str).push::<Self>())?)
@@ -427,9 +452,14 @@ pub(crate) fn derive_struct_de(
 
                     let mut rel_index = 0;
 
-                    for (field_index, (field_name, field_attrs)) in
-                        field_elements.iter().enumerate()
-                    {
+                    for field in fields.iter() {
+                        let Field {
+                            index: field_index,
+                            name: field_name,
+                            attrs: field_attrs,
+                        } = &field;
+                        let field_index = *field_index;
+
                         loop {
                             let abs_index = field_index as u64 + rel_index;
                             if attrs.skips.iter().any(|v| *v == abs_index) {
@@ -502,9 +532,12 @@ pub(crate) fn derive_struct_de(
                 }
                 DeStructure::Flat => {
                     // deserialize each named field
-                    for (_field_index, (field_name, _field_attrs)) in
-                        field_elements.iter().enumerate()
-                    {
+                    for field in fields.iter() {
+                        let Field {
+                            index: _,
+                            name: field_name,
+                            attrs: _,
+                        } = &field;
                         let field_name_str = format!("{}", field_name);
                         let de_body = quote! {
                             let #field_name = reader.decode().map_err(|e| e.push_str(#field_name_str))?;
@@ -521,9 +554,15 @@ pub(crate) fn derive_struct_de(
             }
         }
         // Generate output for a N-tuple
-        StructOutput::Unnamed(field_indexes) => {
+        StructOutput::Unnamed(fields) => {
             // deserialize each unnamed field
-            for (field_index, field_name) in field_indexes.iter().enumerate() {
+            for field in fields.iter() {
+                let Field {
+                    index: field_index,
+                    name: field_name,
+                    attrs: _,
+                } = &field;
+                let field_index = *field_index;
                 let field_name_str = format!("{}", field_name);
                 let de_body = match structure {
                     DeStructure::Array { last_optional: _ } => quote! {
@@ -539,10 +578,12 @@ pub(crate) fn derive_struct_de(
                 de_bodies.push(de_body);
             }
 
+            let indexes = fields.iter().map(|f| f.name.clone()).collect::<Vec<_>>();
+
             quote! {
                 #prelude_deser
                 #( #de_bodies )*
-                Ok(#name ( #(#field_indexes),* ))
+                Ok(#name ( #(#indexes),* ))
             }
         }
     };
