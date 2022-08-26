@@ -1,3 +1,7 @@
+# 0.3.3 (2022-08-26)
+
+- add writer and decode/encode implementation for the Scalar type
+
 # 0.3.2 (2022-08-25)
 
 - add `encode_vec` and `decode_vec`
