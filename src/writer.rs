@@ -82,6 +82,13 @@ impl Writer {
         self.write_value(Major::Negative, d.0)
     }
 
+    pub fn scalar(&mut self, d: Scalar) {
+        match d {
+            Scalar::Positive(p) => self.positive(p),
+            Scalar::Negative(n) => self.negative(n),
+        }
+    }
+
     /// Append a Byte value in the writer
     pub fn byte(&mut self, d: Byte) {
         match d.0 {

@@ -22,6 +22,12 @@ impl Encode for Negative {
     }
 }
 
+impl Encode for Scalar {
+    fn encode(&self, writer: &mut Writer) {
+        writer.scalar(*self)
+    }
+}
+
 impl Encode for Byte {
     fn encode(&self, writer: &mut Writer) {
         writer.byte(*self)
