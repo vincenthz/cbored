@@ -1,6 +1,6 @@
 use super::prim::CborDataOf;
 use super::reader::{Reader, ReaderError};
-use super::types::DataOwned;
+use super::types::{DataOwned, Scalar};
 use std::borrow::Cow;
 use std::fmt;
 
@@ -267,6 +267,15 @@ impl Decode for Vec<u8> {
             .map_err(DecodeErrorKind::ReaderError)
             .map_err(|e| e.context::<Self>())?;
         Ok(t.to_vec())
+    }
+}
+
+impl Decode for Scalar {
+    fn decode<'a>(reader: &mut Reader<'a>) -> Result<Self, DecodeError> {
+        reader
+            .scalar()
+            .map_err(DecodeErrorKind::ReaderError)
+            .map_err(|e| e.context::<Self>())
     }
 }
 
