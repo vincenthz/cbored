@@ -323,7 +323,6 @@ impl<'a> Reader<'a> {
             // indefinite bytes
             None => {
                 let mut out = Vec::new();
-                self.reader.advance(advance);
                 loop {
                     let (hdr, advance) = self.header()?;
                     self.reader.advance(advance);
@@ -331,8 +330,8 @@ impl<'a> Reader<'a> {
                         Header::Break => {
                             break;
                         }
-                        Header::Text(t) => match t {
-                            None => return Err(ReaderError::TextChunksInTextChunks),
+                        Header::Bytes(t) => match t {
+                            None => return Err(ReaderError::BytesChunksInBytesChunks),
                             Some(b) => {
                                 let sz = b.to_size();
                                 let data = self.expect(CborDataContext::Content, sz)?;
@@ -340,7 +339,7 @@ impl<'a> Reader<'a> {
                             }
                         },
                         _ => {
-                            return Err(ReaderError::WrongExpectedTypeInText {
+                            return Err(ReaderError::WrongExpectedTypeInBytes {
                                 got: hdr.to_type(),
                             });
                         }
