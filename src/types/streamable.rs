@@ -107,6 +107,14 @@ impl<'a> Text<'a> {
 }
 
 impl<'a> TextData<'a> {
+    pub fn value(&self) -> Value {
+        self.0
+    }
+
+    pub fn as_str(&self) -> &'a str {
+        self.1
+    }
+
     pub fn from_str(str: &'a str) -> Self {
         TextData(Value::canonical(str.len() as u64), str)
     }
@@ -117,6 +125,14 @@ impl<'a> TextData<'a> {
 }
 
 impl TextDataOwned {
+    pub fn value(&self) -> Value {
+        self.0
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.1
+    }
+
     pub fn borrow<'a>(&'a self) -> TextData<'a> {
         TextData(self.0, self.1.as_str())
     }
@@ -133,6 +149,12 @@ impl<'a> AsRef<&'a str> for TextData<'a> {
 }
 
 impl<'a> BytesData<'a> {
+    pub fn value(&self) -> Value {
+        self.0
+    }
+    pub fn as_slice(&self) -> &'a [u8] {
+        self.1
+    }
     pub fn from_slice(slice: &'a [u8]) -> Self {
         BytesData(Value::canonical(slice.len() as u64), slice)
     }
@@ -142,6 +164,12 @@ impl<'a> BytesData<'a> {
 }
 
 impl BytesDataOwned {
+    pub fn value(&self) -> Value {
+        self.0
+    }
+    pub fn as_slice(&self) -> &[u8] {
+        &self.1
+    }
     pub fn borrow<'a>(&'a self) -> BytesData<'a> {
         BytesData(self.0, self.1.as_ref())
     }
