@@ -1,3 +1,8 @@
+# 0.3.4 (2023-08-19)
+
+- Fix bug with parsing Bytes chunks raising wrong error type and advancing the parser spuriously
+- Add some encoding accessor (value) and raw data for Bytes and Text chunks
+
 # 0.3.3 (2022-08-26)
 
 - add writer and decode/encode implementation for the Scalar type
