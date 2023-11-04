@@ -95,7 +95,7 @@ pub(crate) fn resolve_value(con: Content, ival: Option<IndirectValue>) -> Value 
 pub(crate) fn resolve_value_stream(con: ContentStream, ival: Option<IndirectValue>) -> ValueStream {
     match (con, ival) {
         (ContentStream::Stream, _) => None,
-        (ContentStream::Imm(v), _) => Some(Value::U8(v)),
+        (ContentStream::Imm(v), _) => Some(Value::Imm(v)),
         (ContentStream::Indirect(_), Some(val)) => Some(val.into()),
         _ => panic!("internal error"),
     }
