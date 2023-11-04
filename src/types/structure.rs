@@ -88,6 +88,11 @@ pub struct TagOwned {
 }
 
 impl<'a> Array<'a> {
+    /// Get the structure length of the Array
+    pub fn struct_len(&self) -> StructureLength {
+        self.len_encoding
+    }
+
     /// Return the number of CBOR element in this Array
     pub fn len(&self) -> usize {
         self.elements.len()
@@ -130,6 +135,11 @@ impl<'a> Array<'a> {
 }
 
 impl ArrayOwned {
+    /// Get the structure length of the Array
+    pub fn struct_len(&self) -> StructureLength {
+        self.len_encoding
+    }
+
     /// Return the number of CBOR element in this Array
     pub fn len(&self) -> usize {
         self.elements.len()
@@ -226,6 +236,11 @@ impl std::ops::Index<usize> for ArrayOwned {
 }
 
 impl<'a> Map<'a> {
+    /// Get the structure length of the Map
+    pub fn struct_len(&self) -> StructureLength {
+        self.len_encoding
+    }
+
     /// Return the number of CBOR key-value pairs in this Map
     pub fn len(&self) -> usize {
         self.elements.len()
@@ -284,6 +299,11 @@ impl<'a> Map<'a> {
 }
 
 impl MapOwned {
+    /// Get the structure length of the Map
+    pub fn struct_len(&self) -> StructureLength {
+        self.len_encoding
+    }
+
     /// Return the number of CBOR key-value pairs in this Map
     pub fn len(&self) -> usize {
         self.elements.len()
@@ -343,6 +363,11 @@ impl<'a> std::ops::Index<usize> for Map<'a> {
 }
 
 impl TagValue {
+    /// Get the underlying Value for this Tag value
+    pub fn raw_value(self) -> Value {
+        self.0
+    }
+
     pub fn to_u64(&self) -> u64 {
         self.0.to_u64()
     }
@@ -398,6 +423,10 @@ impl<'a> Tag<'a> {
 }
 
 impl TagOwned {
+    pub fn tag_repr(&self) -> TagValue {
+        self.tag_val
+    }
+
     pub fn value(&self) -> u64 {
         self.tag_val.to_u64()
     }
