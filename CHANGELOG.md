@@ -1,3 +1,8 @@
+# 0.3.5 (2023-10-04)
+
+- Fix small inexact representation of array
+- Add some further encoding accessor (value / struct-len) for Array and Map
+
 # 0.3.4 (2023-08-19)
 
 - Fix bug with parsing Bytes chunks raising wrong error type and advancing the parser spuriously
