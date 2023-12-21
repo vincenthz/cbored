@@ -420,7 +420,7 @@ pub(crate) fn derive_struct_de(
                         } else {
                             if last_optional && field_index == fields.len() - 1 {
                                 quote! {
-                                    let #field_name = if array.len() == #field_index - 1 {
+                                    let #field_name = if array.len() == #field_index + 1 {
                                         Some(array[#field_index].decode().map_err(|e| e.push_str(#field_name_str).push::<Self>())?)
                                     } else {
                                         None
