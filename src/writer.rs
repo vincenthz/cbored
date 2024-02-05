@@ -53,7 +53,7 @@ impl Writer {
         };
     }
 
-    fn write_value_stream(&mut self, m: Major, v: ValueStream) {
+    fn write_value_stream(&mut self, m: Major, v: HeaderValueStream) {
         let lead = m.to_high_bits() | ContentStream::from(v.map(|c| c.to_lead_content())).to_byte();
         self.append_byte(lead);
         match v {

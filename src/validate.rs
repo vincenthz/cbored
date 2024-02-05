@@ -1,7 +1,7 @@
 //! A CBOR validator for raw data
 pub use super::context::CborDataMissing;
 use super::context::*;
-use super::header::{Header, ValueStream};
+use super::header::{Header, HeaderValueStream};
 use super::prim::*;
 use super::state::{State, StateError};
 use crate::lowlevel::lead::*;
@@ -114,7 +114,7 @@ impl<'a> Validator<'a> {
         Ok((lead, advance, indirect))
     }
 
-    fn consume_data_streamable(&mut self, v: ValueStream) -> Result<(), ValidateError> {
+    fn consume_data_streamable(&mut self, v: HeaderValueStream) -> Result<(), ValidateError> {
         match v {
             // beginning of a indefinite Text or indefinite Bytes
             None => {}

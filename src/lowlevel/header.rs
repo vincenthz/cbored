@@ -80,7 +80,7 @@ impl From<IndirectValue> for HeaderValue {
     }
 }
 
-pub type ValueStream = Option<HeaderValue>;
+pub type HeaderValueStream = Option<HeaderValue>;
 
 // resolve the value
 pub(crate) fn resolve_value(con: Content, ival: Option<IndirectValue>) -> HeaderValue {
@@ -92,7 +92,10 @@ pub(crate) fn resolve_value(con: Content, ival: Option<IndirectValue>) -> Header
 }
 
 // resolve the value with streamable
-pub(crate) fn resolve_value_stream(con: ContentStream, ival: Option<IndirectValue>) -> ValueStream {
+pub(crate) fn resolve_value_stream(
+    con: ContentStream,
+    ival: Option<IndirectValue>,
+) -> HeaderValueStream {
     match (con, ival) {
         (ContentStream::Stream, _) => None,
         (ContentStream::Imm(v), _) => Some(HeaderValue::Imm(v)),
@@ -105,10 +108,10 @@ pub(crate) fn resolve_value_stream(con: ContentStream, ival: Option<IndirectValu
 pub enum Header {
     Positive(Positive),
     Negative(Negative),
-    Bytes(ValueStream),
-    Text(ValueStream),
-    Array(ValueStream),
-    Map(ValueStream),
+    Bytes(HeaderValueStream),
+    Text(HeaderValueStream),
+    Array(HeaderValueStream),
+    Map(HeaderValueStream),
     Tag(HeaderValue),
     Constant(Constant),
     Float(Float),

@@ -14,7 +14,7 @@
 //!
 //! * acceptable: check if the state is done
 
-pub use super::header::{HeaderValue, ValueStream};
+pub use super::header::{HeaderValue, HeaderValueStream};
 use std::fmt;
 
 #[derive(Debug, Clone, Copy)]
@@ -209,7 +209,7 @@ impl State {
     // text or bytes
     fn item_streamable(
         &mut self,
-        v: ValueStream,
+        v: HeaderValueStream,
         new_stream: StreamType,
     ) -> Result<(), StateError> {
         match v {
@@ -228,7 +228,7 @@ impl State {
 
     fn struct_start<F>(
         &mut self,
-        v: ValueStream,
+        v: HeaderValueStream,
         stream: StreamType,
         f: F,
     ) -> Result<(), StateError>
@@ -269,7 +269,7 @@ impl State {
     ///
     /// Take the ValueStream in parameter to keep track whether the event
     /// is using indefinite or definite text.
-    pub fn text(&mut self, v: ValueStream) -> Result<(), StateError> {
+    pub fn text(&mut self, v: HeaderValueStream) -> Result<(), StateError> {
         self.item_streamable(v, StreamType::Text)
     }
 
@@ -277,17 +277,17 @@ impl State {
     ///
     /// Take the ValueStream in parameter to keep track whether the event
     /// is using indefinite or definite bytes.
-    pub fn bytes(&mut self, v: ValueStream) -> Result<(), StateError> {
+    pub fn bytes(&mut self, v: HeaderValueStream) -> Result<(), StateError> {
         self.item_streamable(v, StreamType::Bytes)
     }
 
     /// Add a new Array into the context
-    pub fn array(&mut self, v: ValueStream) -> Result<(), StateError> {
+    pub fn array(&mut self, v: HeaderValueStream) -> Result<(), StateError> {
         self.struct_start(v, StreamType::Array, |nz| StructTy::Array(nz))
     }
 
     /// Add a new Map into the context
-    pub fn map(&mut self, v: ValueStream) -> Result<(), StateError> {
+    pub fn map(&mut self, v: HeaderValueStream) -> Result<(), StateError> {
         self.struct_start(v, StreamType::Map(false), |nz| StructTy::Map {
             exp_val: false,
             elements: nz,
