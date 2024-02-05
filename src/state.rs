@@ -14,7 +14,7 @@
 //!
 //! * acceptable: check if the state is done
 
-pub use super::header::{Value, ValueStream};
+pub use super::header::{HeaderValue, ValueStream};
 use std::fmt;
 
 #[derive(Debug, Clone, Copy)]
@@ -340,14 +340,14 @@ mod tests {
     #[test]
     fn array_empty() {
         let mut state = State::new();
-        assert_state_ok!(state.array(Some(Value::U64(0))));
+        assert_state_ok!(state.array(Some(HeaderValue::U64(0))));
         assert!(state.acceptable());
     }
 
     #[test]
     fn array1() {
         let mut state = State::new();
-        assert_state_ok!(state.array(Some(Value::U64(3))));
+        assert_state_ok!(state.array(Some(HeaderValue::U64(3))));
         assert_state_ok!(state.simple());
         assert_state_ok!(state.simple());
         assert_state_ok!(state.simple());
@@ -357,7 +357,7 @@ mod tests {
     #[test]
     fn map1() {
         let mut state = State::new();
-        assert_state_ok!(state.map(Some(Value::U64(2))));
+        assert_state_ok!(state.map(Some(HeaderValue::U64(2))));
         assert_state_ok!(state.simple());
         assert_state_ok!(state.simple());
         assert_state_ok!(state.simple());
@@ -368,11 +368,11 @@ mod tests {
     #[test]
     fn map_rec1() {
         let mut state = State::new();
-        assert_state_ok!(state.map(Some(Value::U64(2))));
+        assert_state_ok!(state.map(Some(HeaderValue::U64(2))));
         assert_state_ok!(state.simple());
         assert_state_ok!(state.simple());
         assert_state_ok!(state.simple());
-        assert_state_ok!(state.map(Some(Value::U64(1))));
+        assert_state_ok!(state.map(Some(HeaderValue::U64(1))));
         assert_state_ok!(state.simple());
         assert_state_ok!(state.simple());
         assert!(state.acceptable());
@@ -381,7 +381,7 @@ mod tests {
     #[test]
     fn array_rec1() {
         let mut state = State::new();
-        assert_state_ok!(state.array(Some(Value::U64(3))));
+        assert_state_ok!(state.array(Some(HeaderValue::U64(3))));
         assert_state_ok!(state.simple());
         assert_state_ok!(state.array(None));
         assert_state_ok!(state.brk());
@@ -392,7 +392,7 @@ mod tests {
     #[test]
     fn array_rec2() {
         let mut state = State::new();
-        assert_state_ok!(state.array(Some(Value::U64(3))));
+        assert_state_ok!(state.array(Some(HeaderValue::U64(3))));
         assert_state_ok!(state.simple());
         assert_state_ok!(state.simple());
         assert_state_ok!(state.array(None));
@@ -403,10 +403,10 @@ mod tests {
     #[test]
     fn chunk_bytes() {
         let mut state = State::new();
-        assert_state_ok!(state.array(Some(Value::U64(1))));
+        assert_state_ok!(state.array(Some(HeaderValue::U64(1))));
         assert_state_ok!(state.bytes(None));
-        assert_state_ok!(state.bytes(Some(Value::U64(1))));
-        assert_state_ok!(state.bytes(Some(Value::U64(1))));
+        assert_state_ok!(state.bytes(Some(HeaderValue::U64(1))));
+        assert_state_ok!(state.bytes(Some(HeaderValue::U64(1))));
         assert_state_ok!(state.brk());
         assert!(state.acceptable());
     }
@@ -414,10 +414,10 @@ mod tests {
     #[test]
     fn chunk_text() {
         let mut state = State::new();
-        assert_state_ok!(state.array(Some(Value::U64(1))));
+        assert_state_ok!(state.array(Some(HeaderValue::U64(1))));
         assert_state_ok!(state.text(None));
-        assert_state_ok!(state.text(Some(Value::U64(1))));
-        assert_state_ok!(state.text(Some(Value::U64(1))));
+        assert_state_ok!(state.text(Some(HeaderValue::U64(1))));
+        assert_state_ok!(state.text(Some(HeaderValue::U64(1))));
         assert_state_ok!(state.brk());
         assert!(state.acceptable());
     }
@@ -425,7 +425,7 @@ mod tests {
     #[test]
     fn tag() {
         let mut state = State::new();
-        assert_state_ok!(state.array(Some(Value::U64(3))));
+        assert_state_ok!(state.array(Some(HeaderValue::U64(3))));
         assert_state_ok!(state.simple());
         assert_state_ok!(state.tag());
         assert_state_ok!(state.simple());

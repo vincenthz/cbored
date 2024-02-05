@@ -1,10 +1,10 @@
 use super::context::*;
 use super::decode::*;
 use super::header::*;
-use super::lead::*;
 use super::prim::*;
 use super::state::*;
 use super::types::*;
+use crate::lowlevel::lead::*;
 
 /// Possible error when reading CBOR from a data stream
 #[derive(Debug, Clone)]
@@ -356,7 +356,7 @@ impl<'a> Reader<'a> {
         }
     }
 
-    fn text_data(&mut self, b: Value) -> Result<TextData<'a>, ReaderError> {
+    fn text_data(&mut self, b: HeaderValue) -> Result<TextData<'a>, ReaderError> {
         let sz = b.to_size();
         let data = self.expect(CborDataContext::Content, sz)?;
         let data_str = std::str::from_utf8(data).map_err(|err| ReaderError::TextUTF8Error(err))?;

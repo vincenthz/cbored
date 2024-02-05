@@ -1,4 +1,4 @@
-use super::lead::Lead;
+use crate::lowlevel::lead::Lead;
 
 mod float;
 mod scalar;

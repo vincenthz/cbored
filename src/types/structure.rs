@@ -1,6 +1,6 @@
 use super::super::decode::{Decode, DecodeError, DecodeErrorKind};
 use super::super::encode::Encode;
-use super::super::header::Value;
+use super::super::header::HeaderValue;
 use super::super::prim::{CborData, CborSlice};
 use super::super::reader::{Reader, ReaderError};
 use super::super::writer::Writer;
@@ -9,7 +9,7 @@ use std::borrow::{Borrow, ToOwned};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StructureLength {
     Indefinite,
-    Definite(Value),
+    Definite(HeaderValue),
 }
 
 impl StructureLength {
@@ -21,8 +21,8 @@ impl StructureLength {
     }
 }
 
-impl From<Option<Value>> for StructureLength {
-    fn from(v: Option<Value>) -> StructureLength {
+impl From<Option<HeaderValue>> for StructureLength {
+    fn from(v: Option<HeaderValue>) -> StructureLength {
         match v {
             None => StructureLength::Indefinite,
             Some(val) => StructureLength::Definite(val),
@@ -32,7 +32,7 @@ impl From<Option<Value>> for StructureLength {
 
 impl From<u64> for StructureLength {
     fn from(v: u64) -> StructureLength {
-        StructureLength::Definite(Value::canonical(v))
+        StructureLength::Definite(HeaderValue::canonical(v))
     }
 }
 
@@ -71,7 +71,7 @@ pub struct MapOwned {
 
 /// CBOR Tag Value in a Tag
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct TagValue(pub(crate) Value);
+pub struct TagValue(pub(crate) HeaderValue);
 
 /// CBOR Tag with reference to the tagged element
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -364,7 +364,7 @@ impl<'a> std::ops::Index<usize> for Map<'a> {
 
 impl TagValue {
     /// Get the underlying Value for this Tag value
-    pub fn raw_value(self) -> Value {
+    pub fn raw_value(self) -> HeaderValue {
         self.0
     }
 
@@ -373,7 +373,7 @@ impl TagValue {
     }
 
     pub fn from_u64(v: u64) -> Self {
-        Self(Value::canonical(v))
+        Self(HeaderValue::canonical(v))
     }
 }
 

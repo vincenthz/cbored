@@ -1,8 +1,8 @@
 use super::encode::Encode;
 use super::header::*;
-use super::lead::*;
 use super::prim::CborData;
 use super::types::*;
+use crate::lowlevel::lead::*;
 
 /// CBOR Data structure to write CBOR elements to a growing byte vector
 pub struct Writer {
@@ -41,15 +41,15 @@ impl Writer {
         self.append_byte(0xff);
     }
 
-    fn write_value(&mut self, m: Major, v: Value) {
+    fn write_value(&mut self, m: Major, v: HeaderValue) {
         let lead = m.to_high_bits() | v.to_lead_content().to_byte();
         self.append_byte(lead);
         match v {
-            Value::Imm(_) => (),
-            Value::U8(v) => self.append_byte(v),
-            Value::U16(v) => self.append_slice(&v.to_be_bytes()),
-            Value::U32(v) => self.append_slice(&v.to_be_bytes()),
-            Value::U64(v) => self.append_slice(&v.to_be_bytes()),
+            HeaderValue::Imm(_) => (),
+            HeaderValue::U8(v) => self.append_byte(v),
+            HeaderValue::U16(v) => self.append_slice(&v.to_be_bytes()),
+            HeaderValue::U32(v) => self.append_slice(&v.to_be_bytes()),
+            HeaderValue::U64(v) => self.append_slice(&v.to_be_bytes()),
         };
     }
 
@@ -57,11 +57,11 @@ impl Writer {
         let lead = m.to_high_bits() | ContentStream::from(v.map(|c| c.to_lead_content())).to_byte();
         self.append_byte(lead);
         match v {
-            None | Some(Value::Imm(_)) => (),
-            Some(Value::U8(v)) => self.append_byte(v),
-            Some(Value::U16(v)) => self.append_slice(&v.to_be_bytes()),
-            Some(Value::U32(v)) => self.append_slice(&v.to_be_bytes()),
-            Some(Value::U64(v)) => self.append_slice(&v.to_be_bytes()),
+            None | Some(HeaderValue::Imm(_)) => (),
+            Some(HeaderValue::U8(v)) => self.append_byte(v),
+            Some(HeaderValue::U16(v)) => self.append_slice(&v.to_be_bytes()),
+            Some(HeaderValue::U32(v)) => self.append_slice(&v.to_be_bytes()),
+            Some(HeaderValue::U64(v)) => self.append_slice(&v.to_be_bytes()),
         };
     }
 
@@ -92,11 +92,11 @@ impl Writer {
     /// Append a Byte value in the writer
     pub fn byte(&mut self, d: Byte) {
         match d.0 {
-            Value8::Imm(v) => {
+            HeaderValue8::Imm(v) => {
                 assert!(v < 0x14);
                 self.append_byte(0xe0 + v);
             }
-            Value8::U8(v) => {
+            HeaderValue8::U8(v) => {
                 self.append_byte(0xf8);
                 self.append_byte(v);
             }

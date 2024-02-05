@@ -1,12 +1,12 @@
-use super::super::header::{Value, Value8};
+use super::super::header::{HeaderValue, HeaderValue8};
 
 /// CBOR Positive value
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Positive(pub(crate) Value);
+pub struct Positive(pub(crate) HeaderValue);
 
 /// CBOR Negative value
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Negative(pub(crate) Value);
+pub struct Negative(pub(crate) HeaderValue);
 
 /// Union type of CBOR Positive or Negative value
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -17,7 +17,7 @@ pub enum Scalar {
 
 /// CBOR Byte value
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Byte(pub(crate) Value8);
+pub struct Byte(pub(crate) HeaderValue8);
 
 /// CBOR constants (False/True/Null/Undefined)
 #[derive(Clone, Debug, Copy, PartialEq, Eq)]
@@ -30,7 +30,7 @@ pub enum Constant {
 
 impl Positive {
     /// Get the underlying Value for this Positive value
-    pub fn raw_value(&self) -> Value {
+    pub fn raw_value(&self) -> HeaderValue {
         self.0
     }
 
@@ -42,7 +42,7 @@ impl Positive {
     /// Create a canonical Positive element from a u64,
     /// taking the smallest possible CBOR representation
     pub fn canonical(v: u64) -> Self {
-        Self(Value::canonical(v))
+        Self(HeaderValue::canonical(v))
     }
 
     /// Check if the encoded Positive CBOR element have
@@ -54,7 +54,7 @@ impl Positive {
 
 impl Negative {
     /// Get the underlying Value for this Negative value
-    pub fn raw_value(self) -> Value {
+    pub fn raw_value(self) -> HeaderValue {
         self.0
     }
 
@@ -82,7 +82,7 @@ impl Negative {
     ///
     /// To represent the CBOR negative value -1, `Negative::canonical(0)`
     pub fn canonical(v: u64) -> Self {
-        Self(Value::canonical(v))
+        Self(HeaderValue::canonical(v))
     }
 
     /// Check if the encoded Negative CBOR element have
@@ -107,7 +107,7 @@ impl Scalar {
     }
 
     /// Get the underlying Value for this Negative value
-    pub fn raw_value(self) -> Value {
+    pub fn raw_value(self) -> HeaderValue {
         match self {
             Scalar::Positive(v) => v.raw_value(),
             Scalar::Negative(v) => v.raw_value(),
@@ -151,7 +151,7 @@ impl Scalar {
 
 impl Byte {
     /// Get the underlying Value8 for this Negative value
-    pub fn raw_value(self) -> Value8 {
+    pub fn raw_value(self) -> HeaderValue8 {
         self.0
     }
 
@@ -160,7 +160,7 @@ impl Byte {
     }
 
     pub fn canonical(v: u8) -> Self {
-        Byte(Value8::canonical(v))
+        Byte(HeaderValue8::canonical(v))
     }
 
     pub fn is_canonical(self) -> bool {

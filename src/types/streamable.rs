@@ -1,4 +1,4 @@
-use super::super::header::Value;
+use super::super::header::HeaderValue;
 
 /// CBOR Bytestream (indefinite and definite) with reference to the bytes
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -16,11 +16,11 @@ pub enum BytesOwned {
 
 /// CBOR Bytestream reference to a chunk of byte
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BytesData<'a>(pub(crate) Value, pub(crate) &'a [u8]);
+pub struct BytesData<'a>(pub(crate) HeaderValue, pub(crate) &'a [u8]);
 
 /// CBOR Bytestream owned chunk of byte
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BytesDataOwned(pub(crate) Value, pub(crate) Vec<u8>);
+pub struct BytesDataOwned(pub(crate) HeaderValue, pub(crate) Vec<u8>);
 
 /// CBOR Text (UTF-8) (indefinite and definite) with reference to text chunk
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -38,11 +38,11 @@ pub enum TextOwned {
 
 /// CBOR Text chunk with reference to the chunk of utf8 sequence
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TextData<'a>(pub(crate) Value, pub(crate) &'a str);
+pub struct TextData<'a>(pub(crate) HeaderValue, pub(crate) &'a str);
 
 /// CBOR Text chunk with owned chunk of utf8 sequence
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TextDataOwned(pub(crate) Value, pub(crate) String);
+pub struct TextDataOwned(pub(crate) HeaderValue, pub(crate) String);
 
 impl<'a> Bytes<'a> {
     pub fn len(&self) -> usize {
@@ -107,7 +107,7 @@ impl<'a> Text<'a> {
 }
 
 impl<'a> TextData<'a> {
-    pub fn value(&self) -> Value {
+    pub fn value(&self) -> HeaderValue {
         self.0
     }
 
@@ -116,7 +116,7 @@ impl<'a> TextData<'a> {
     }
 
     pub fn from_str(str: &'a str) -> Self {
-        TextData(Value::canonical(str.len() as u64), str)
+        TextData(HeaderValue::canonical(str.len() as u64), str)
     }
 
     pub fn owned(&self) -> TextDataOwned {
@@ -125,7 +125,7 @@ impl<'a> TextData<'a> {
 }
 
 impl TextDataOwned {
-    pub fn value(&self) -> Value {
+    pub fn value(&self) -> HeaderValue {
         self.0
     }
 
@@ -138,7 +138,7 @@ impl TextDataOwned {
     }
 
     pub fn from_string(string: String) -> Self {
-        TextDataOwned(Value::canonical(string.len() as u64), string)
+        TextDataOwned(HeaderValue::canonical(string.len() as u64), string)
     }
 }
 
@@ -149,14 +149,14 @@ impl<'a> AsRef<&'a str> for TextData<'a> {
 }
 
 impl<'a> BytesData<'a> {
-    pub fn value(&self) -> Value {
+    pub fn value(&self) -> HeaderValue {
         self.0
     }
     pub fn as_slice(&self) -> &'a [u8] {
         self.1
     }
     pub fn from_slice(slice: &'a [u8]) -> Self {
-        BytesData(Value::canonical(slice.len() as u64), slice)
+        BytesData(HeaderValue::canonical(slice.len() as u64), slice)
     }
     pub fn owned(&self) -> BytesDataOwned {
         BytesDataOwned(self.0, self.1.to_vec())
@@ -164,7 +164,7 @@ impl<'a> BytesData<'a> {
 }
 
 impl BytesDataOwned {
-    pub fn value(&self) -> Value {
+    pub fn value(&self) -> HeaderValue {
         self.0
     }
     pub fn as_slice(&self) -> &[u8] {
@@ -175,7 +175,7 @@ impl BytesDataOwned {
     }
 
     pub fn from_vec(bytes: Vec<u8>) -> Self {
-        BytesDataOwned(Value::canonical(bytes.len() as u64), bytes)
+        BytesDataOwned(HeaderValue::canonical(bytes.len() as u64), bytes)
     }
 }
 

@@ -1,4 +1,4 @@
-use super::header::Value;
+use super::header::HeaderValue;
 use super::prim::{CborData, CborDataOf, CborSlice, CborSliceOf};
 use super::types::*;
 use super::writer::Writer;
@@ -174,7 +174,7 @@ impl Encode for CborSlice {
 /// element written with the encode method for each T value sequentially
 pub fn encode_vec<T: Encode>(elements: &[T], writer: &mut Writer) {
     writer.array_build(
-        StructureLength::Definite(Value::canonical(elements.len() as u64)),
+        StructureLength::Definite(HeaderValue::canonical(elements.len() as u64)),
         |inner_writer| {
             for e in elements {
                 e.encode(inner_writer)
