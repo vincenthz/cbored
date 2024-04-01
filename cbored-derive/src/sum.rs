@@ -25,6 +25,9 @@ impl EnumAttrs {
                     Attr::SkipKey(_) => {
                         panic!("enum does not support skip key attribute")
                     }
+                    Attr::MapStartsAt(_) => {
+                        panic!("enum does not support map_starts_at key attribute")
+                    }
                     Attr::EnumType(ty) => enumtype = ty,
                     Attr::VariantStartsAt(v) => variant_starts_at = v,
                 }

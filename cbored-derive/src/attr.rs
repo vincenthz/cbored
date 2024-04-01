@@ -97,6 +97,7 @@ pub(crate) enum Attr {
     EnumType(EnumType),
     Tag(u64),
     VariantStartsAt(usize),
+    MapStartsAt(usize),
     SkipKey(u64),
 }
 
@@ -134,6 +135,11 @@ pub(crate) fn parse_attr(meta: &Meta) -> Vec<Attr> {
                 let lit: syn::LitStr = value.parse()?;
                 let struct_type = StructureType::from_str(&lit.value()).expect("Valid struct type");
                 output.push(Attr::Structure(struct_type));
+                Ok(())
+            } else if meta.path.is_ident("map_starts_at") {
+                let value = meta.value()?;
+                let lit: syn::LitInt = value.parse()?;
+                output.push(Attr::MapStartsAt(parse_int(&lit) as usize));
                 Ok(())
             } else if meta.path.is_ident("variant_starts_at") {
                 let value = meta.value()?;

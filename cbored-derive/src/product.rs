@@ -8,6 +8,7 @@ use super::common::*;
 
 pub(crate) struct StructAttrs {
     structure_type: StructureType,
+    starts_at: usize,
     tag: Option<u64>,
     skips: Vec<u64>,
 }
@@ -16,6 +17,7 @@ impl Default for StructAttrs {
     fn default() -> Self {
         StructAttrs {
             structure_type: StructureType::Flat,
+            starts_at: 0,
             tag: None,
             skips: Vec::new(),
         }
@@ -29,6 +31,7 @@ impl StructAttrs {
             Attr::Structure(ty) => {
                 self.structure_type = *ty;
             }
+            Attr::MapStartsAt(start) => self.starts_at = *start,
             Attr::EnumType(_) | Attr::VariantStartsAt(_) => {
                 panic!("structure does not support enum type attribute")
             }
@@ -203,7 +206,7 @@ pub(crate) fn derive_struct_se(
                     }
                     // Generate output for a standard record
                     StructOutput::Named(field_elements) => {
-                        let mut rel_index = 0;
+                        let mut rel_index = attrs.starts_at as u64;
                         for field in field_elements.iter() {
                             let Field {
                                 index: field_index,

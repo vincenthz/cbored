@@ -107,6 +107,7 @@ Structure:
 
 * `array`: the structure is serialized one after another inside an array of the length reflecting the number of elements
 * `flat`: each field is serialized one after another, using the Decode/Encode instance of each type. not recommended in general case, as it doesn't play nice with array / map structure.
+* `mapint`: the structure is serialized as a map, where the key index is the index of the field relative to the `map_starts_at` argument (if not present starts at 0)
 
 Enums :
 
