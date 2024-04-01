@@ -163,8 +163,8 @@ pub(crate) fn parse_attr(meta: &Meta) -> Vec<Attr> {
                     panic!("uugh meta::list")
                 }
             },
-            _ => {
-                panic!("attribute list not supported")
+            NestedMeta::Lit(_) => {
+                panic!("attribute lit not supported")
             }
         }
     }
@@ -259,8 +259,8 @@ pub(crate) fn parse_field_attr(meta: &Meta) -> Vec<FieldAttr> {
                     },
                 },
             },
-            _ => {
-                panic!("attribute list not supported")
+            NestedMeta::Lit(_) => {
+                panic!("attribute lit not supported")
             }
         }
     }
