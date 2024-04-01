@@ -8,7 +8,7 @@ homepage = "https://github.com/vincenthz/cbored"
 repository = "https://github.com/vincenthz/cbored"
 description = "CBOR exact reader and writer"
 keywords = ["CBOR"]
-categories = [ "parsing", "encoding" ]
+categories = ["parsing", "encoding"]
 
 [dependencies]
 cbored-derive = { path = "./cbored-derive", version = "0.3", optional = true }

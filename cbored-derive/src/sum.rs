@@ -12,7 +12,7 @@ pub(crate) struct EnumAttrs {
 }
 
 impl EnumAttrs {
-    pub fn from_metas(attrs: &[Meta]) -> Self {
+    pub fn from_metas(attrs: &[&Meta]) -> Self {
         let mut enumtype = EnumType::TagVariant;
         let mut variant_starts_at = 0;
 
@@ -61,7 +61,7 @@ fn variant_field(attrs: &EnumAttrs, variant: &Variant) -> VariantDef {
     }
 
     let variant_attrs = get_my_attributes(&variant.attrs)
-        .map(|a| parse_field_attr(&a.parse_meta().expect("field attr")))
+        .map(|a| parse_field_attr(a))
         .fold(FieldAttrs::default(), |acc, y| {
             y.iter().fold(acc, |acc, y| acc.merge(y))
         });
@@ -106,7 +106,7 @@ fn variant_field(attrs: &EnumAttrs, variant: &Variant) -> VariantDef {
 
 pub(crate) fn derive_enum_se(
     name: &Ident,
-    attrs: &[Meta],
+    attrs: &[&Meta],
     st: &DataEnum,
 ) -> proc_macro2::TokenStream {
     let mut se_branches = Vec::new();
@@ -239,7 +239,7 @@ pub(crate) fn derive_enum_se(
 
 pub(crate) fn derive_enum_de(
     name: &Ident,
-    attrs: &[Meta],
+    attrs: &[&Meta],
     st: &DataEnum,
 ) -> proc_macro2::TokenStream {
     let name_type = format!("{}", name);
@@ -589,7 +589,7 @@ pub(crate) fn derive_enum_de(
     token_impl_deserializer(&name, body)
 }
 
-pub(crate) fn derive_enum(name: Ident, attrs: &[Meta], st: DataEnum) -> TokenStream {
+pub(crate) fn derive_enum(name: Ident, attrs: &[&Meta], st: DataEnum) -> TokenStream {
     let de = derive_enum_de(&name, attrs, &st);
     let se = derive_enum_se(&name, attrs, &st);
     TokenStream::from(quote! { #de #se })

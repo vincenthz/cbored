@@ -16,12 +16,7 @@ pub fn derive_cbor_repr(input: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(input as DeriveInput);
 
     // Gather the cborrepr attributes as Meta
-    let attrs = get_my_attributes(&ast.attrs)
-        .map(|a| {
-            a.parse_meta()
-                .expect(&format!("cannot parse cborrepr attribute"))
-        })
-        .collect::<Vec<_>>();
+    let attrs = get_my_attributes(&ast.attrs).collect::<Vec<_>>();
 
     // either do struct or enum handling
     match ast.data {

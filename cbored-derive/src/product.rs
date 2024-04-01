@@ -63,7 +63,7 @@ impl StructOutput {
 fn get_struct_naming(fields: &Fields) -> StructOutput {
     fn attrs(attrs: &Vec<syn::Attribute>) -> FieldAttrs {
         get_my_attributes(attrs)
-            .map(|a| parse_field_attr(&a.parse_meta().expect("field attr")))
+            .map(|a| parse_field_attr(a))
             .fold(FieldAttrs::default(), |acc, y| {
                 y.iter().fold(acc, |acc, y| acc.merge(y))
             })
@@ -591,7 +591,7 @@ pub(crate) fn derive_struct_de(
     token_impl_deserializer(&name, de_body)
 }
 
-pub(crate) fn derive_struct(name: Ident, attrs: &[Meta], st: DataStruct) -> TokenStream {
+pub(crate) fn derive_struct(name: Ident, attrs: &[&Meta], st: DataStruct) -> TokenStream {
     let attrs = attrs
         .iter()
         .map(|meta| parse_attr(meta))
