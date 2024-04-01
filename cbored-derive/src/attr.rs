@@ -100,70 +100,74 @@ pub(crate) enum Attr {
     SkipKey(u64),
 }
 
-pub(crate) fn parse_attr(meta: &Meta) -> Vec<Attr> {
-    let mut output = Vec::new();
+fn parse_meta_list(meta: &Meta) -> &syn::MetaList {
     match meta {
-        Meta::List(meta_list) => {
-            for attr in meta_list.nested.iter() {
-                match attr {
-                    NestedMeta::Meta(v) => match v {
-                        Meta::NameValue(v) => {
-                            let keys = v
-                                .path
-                                .segments
-                                .iter()
-                                .map(|p| p.ident.to_string())
-                                .collect::<Vec<_>>();
-                            match keys[0].as_str() {
-                                "tag" => {
-                                    let i = parse_int(&v.lit);
-                                    output.push(Attr::Tag(i));
-                                }
-                                "enumtype" => {
-                                    let s = parse_string(&v.lit);
-                                    let enum_type =
-                                        EnumType::from_str(s.as_str()).expect("Valid enum type");
-                                    output.push(Attr::EnumType(enum_type));
-                                }
-                                "structure" => {
-                                    let s = parse_string(&v.lit);
-                                    let struct_type = StructureType::from_str(s.as_str())
-                                        .expect("Valid struct type");
-                                    output.push(Attr::Structure(struct_type));
-                                }
-                                "variant_starts_at" => {
-                                    let i = parse_int(&v.lit);
-                                    output.push(Attr::VariantStartsAt(i as usize));
-                                }
-                                "skipkey" => {
-                                    let i = parse_int(&v.lit);
-                                    output.push(Attr::SkipKey(i));
-                                }
-                                _ => {
-                                    panic!("unknown key \"{:?}\"", keys[0])
-                                }
-                            }
-                        }
-                        Meta::Path(p) => {
-                            panic!("uugh meta::path {:?}", p.get_ident().map(|p| p.to_string()))
-                        }
-                        Meta::List(_) => {
-                            panic!("uugh meta::list")
-                        }
-                    },
-                    _ => {
-                        panic!("attribute list not supported")
-                    }
-                }
-            }
-        }
+        Meta::List(meta_list) => &meta_list,
         Meta::NameValue(_meta_name_val) => {
             panic!("attribute name value not supported")
         }
         Meta::Path(_path) => {
             panic!("attribute path not supported")
         }
-    };
+    }
+}
+
+pub(crate) fn parse_attr(meta: &Meta) -> Vec<Attr> {
+    let mut output = Vec::new();
+    let meta_list = parse_meta_list(meta);
+
+    for attr in meta_list.nested.iter() {
+        match attr {
+            NestedMeta::Meta(v) => match v {
+                Meta::NameValue(v) => {
+                    let keys = v
+                        .path
+                        .segments
+                        .iter()
+                        .map(|p| p.ident.to_string())
+                        .collect::<Vec<_>>();
+                    match keys[0].as_str() {
+                        "tag" => {
+                            let i = parse_int(&v.lit);
+                            output.push(Attr::Tag(i));
+                        }
+                        "enumtype" => {
+                            let s = parse_string(&v.lit);
+                            let enum_type =
+                                EnumType::from_str(s.as_str()).expect("Valid enum type");
+                            output.push(Attr::EnumType(enum_type));
+                        }
+                        "structure" => {
+                            let s = parse_string(&v.lit);
+                            let struct_type =
+                                StructureType::from_str(s.as_str()).expect("Valid struct type");
+                            output.push(Attr::Structure(struct_type));
+                        }
+                        "variant_starts_at" => {
+                            let i = parse_int(&v.lit);
+                            output.push(Attr::VariantStartsAt(i as usize));
+                        }
+                        "skipkey" => {
+                            let i = parse_int(&v.lit);
+                            output.push(Attr::SkipKey(i));
+                        }
+                        _ => {
+                            panic!("unknown key \"{:?}\"", keys[0])
+                        }
+                    }
+                }
+                Meta::Path(p) => {
+                    panic!("uugh meta::path {:?}", p.get_ident().map(|p| p.to_string()))
+                }
+                Meta::List(_) => {
+                    panic!("uugh meta::list")
+                }
+            },
+            _ => {
+                panic!("attribute list not supported")
+            }
+        }
+    }
     output
 }
 
@@ -208,65 +212,56 @@ impl FieldAttrs {
 
 pub(crate) fn parse_field_attr(meta: &Meta) -> Vec<FieldAttr> {
     let mut output = Vec::new();
-    match meta {
-        Meta::List(meta_list) => {
-            for attr in meta_list.nested.iter() {
-                match attr {
-                    NestedMeta::Meta(v) => match v {
-                        Meta::NameValue(v) => {
-                            let keys = v
-                                .path
-                                .segments
-                                .iter()
-                                .map(|p| p.ident.to_string())
-                                .collect::<Vec<_>>();
-                            match keys[0].as_str() {
-                                "variant" => {
-                                    let s = parse_string(&v.lit);
-                                    let variant_type = FieldVariantType::from_str(s.as_str())
-                                        .expect("Valid enum type");
-                                    output.push(FieldAttr::Variant(variant_type));
-                                }
-                                "cbortype" => {
-                                    let s = parse_string(&v.lit);
-                                    let variant_type = FieldCborType::from_str(s.as_str())
-                                        .expect("Valid enum type");
-                                    output.push(FieldAttr::CborType(variant_type));
-                                }
-                                _ => {
-                                    panic!("unknown field attribute key \"{:?}\"", keys[0])
-                                }
-                            }
+    let meta_list = parse_meta_list(meta);
+    for attr in meta_list.nested.iter() {
+        match attr {
+            NestedMeta::Meta(v) => match v {
+                Meta::NameValue(v) => {
+                    let keys = v
+                        .path
+                        .segments
+                        .iter()
+                        .map(|p| p.ident.to_string())
+                        .collect::<Vec<_>>();
+                    match keys[0].as_str() {
+                        "variant" => {
+                            let s = parse_string(&v.lit);
+                            let variant_type =
+                                FieldVariantType::from_str(s.as_str()).expect("Valid enum type");
+                            output.push(FieldAttr::Variant(variant_type));
                         }
-                        Meta::List(_) => {
-                            panic!("uugh list")
+                        "cbortype" => {
+                            let s = parse_string(&v.lit);
+                            let variant_type =
+                                FieldCborType::from_str(s.as_str()).expect("Valid enum type");
+                            output.push(FieldAttr::CborType(variant_type));
                         }
-                        Meta::Path(p) => match p.get_ident().map(|p| p.to_string()) {
-                            None => panic!("field attribute path empty"),
-                            Some(s) => match s.as_str() {
-                                "mandatory" => {
-                                    output.push(FieldAttr::Mandatory);
-                                }
-                                "optional" => {
-                                    output.push(FieldAttr::Optional);
-                                }
-                                _ => {
-                                    panic!("unknown field attribute path \"{:?}\"", s)
-                                }
-                            },
-                        },
-                    },
-                    _ => {
-                        panic!("attribute list not supported")
+                        _ => {
+                            panic!("unknown field attribute key \"{:?}\"", keys[0])
+                        }
                     }
                 }
+                Meta::List(_) => {
+                    panic!("uugh list")
+                }
+                Meta::Path(p) => match p.get_ident().map(|p| p.to_string()) {
+                    None => panic!("field attribute path empty"),
+                    Some(s) => match s.as_str() {
+                        "mandatory" => {
+                            output.push(FieldAttr::Mandatory);
+                        }
+                        "optional" => {
+                            output.push(FieldAttr::Optional);
+                        }
+                        _ => {
+                            panic!("unknown field attribute path \"{:?}\"", s)
+                        }
+                    },
+                },
+            },
+            _ => {
+                panic!("attribute list not supported")
             }
-        }
-        Meta::NameValue(_meta_name_val) => {
-            panic!("attribute name value not supported")
-        }
-        Meta::Path(_path) => {
-            panic!("attribute path not supported")
         }
     }
     output
