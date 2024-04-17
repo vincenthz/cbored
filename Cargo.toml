@@ -11,7 +11,7 @@ keywords = ["CBOR"]
 categories = ["parsing", "encoding"]
 
 [dependencies]
-cbored-derive = { path = "./cbored-derive", version = "0.3", optional = true }
+cbored-derive = { path = "./cbored-derive", version = "0.4", optional = true }
 
 [features]
 default = []
