@@ -69,11 +69,15 @@ pub struct FlatPoint {
 #[derive(CborRepr)]
 #[cborrepr(enumtype = "tagvariant")]
 // serialized as
-// * One : ARRAY(2) [ UINT(0), ARRAY(2) [UINT, UINT] ]
-// * Two : ARRAY(3) [ UINT(1), ARRAY(2) [UINT, UINT], ARRAY(2) [UINT, UINT] ]
+// * One : ARRAY(2) [ UINT(0), UINT ]
+// * Two : ARRAY(3) [ UINT(1), UINT, TEXT ]
+// * Three : ARRAY(2) [ UINT(2), ARRAY(2) [ UINT, UINT ] ]
+// * Four : ARRAY(1) [ UINT(3) ]
 pub enum Variant {
-    One(Point),
-    Two(Point, Point),
+    One(u32),
+    Two(u64, String),
+    Three(Point),
+    Four,
 }
 
 #[derive(CborRepr)]
