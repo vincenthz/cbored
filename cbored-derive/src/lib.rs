@@ -15,6 +15,11 @@ pub fn derive_cbor_repr(input: TokenStream) -> TokenStream {
     // Parse type (struct/enum)
     let ast = syn::parse_macro_input!(input as DeriveInput);
 
+    let has_generics = ast.generics.params.len() > 0;
+    if has_generics {
+        panic!("cannot handle types with generics")
+    }
+
     // Gather the cborrepr attributes as Meta
     let attrs = get_my_attributes(&ast.attrs).collect::<Vec<_>>();
 
