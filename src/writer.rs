@@ -15,6 +15,14 @@ impl Writer {
         Writer { data: Vec::new() }
     }
 
+    /// Create a new CBOR Writer in a specific buffer.
+    ///
+    /// This allow for example to prefix the data with some kind of framing,
+    /// or set the capacity of the vector
+    pub fn new_from_vec(data: Vec<u8>) -> Self {
+        Writer { data }
+    }
+
     pub fn finalize_data(self) -> CborData {
         CborData(self.data)
     }
