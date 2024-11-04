@@ -1,3 +1,14 @@
+# 0.4.1
+
+- add Writer `new_from_vec`
+
+# 0.4.0
+
+- Add a friendly error when the structure to derive has generics
+- Add MapStartsAt attribute for Map derivation
+- Fix calculation of derived structure with the lastopt attribute
+- Update to syn2 for derive
+
 # 0.3.5 (2023-10-04)
 
 - Fix small inexact representation of array
