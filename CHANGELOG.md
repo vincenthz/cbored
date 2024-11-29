@@ -1,3 +1,8 @@
+# 0.4.2
+
+- Remove bool parameter to StreamType::Map
+- export CborSlice
+
 # 0.4.1
 
 - add Writer `new_from_vec`
