@@ -38,7 +38,7 @@ pub use writer::Writer;
 pub use decode::{decode_vec, Decode, DecodeError, DecodeErrorKind};
 pub use encode::{encode_vec, Encode};
 
-pub use prim::{CborDataOf, CborSliceOf, CborSlice};
+pub use prim::{CborDataOf, CborSlice, CborSliceOf};
 pub use types::*;
 
 #[cfg(feature = "derive")]
