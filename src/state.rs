@@ -20,7 +20,7 @@ use std::fmt;
 #[derive(Debug, Clone, Copy)]
 enum StreamType {
     Array,
-    Map(bool),
+    Map,
     Bytes,
     Text,
 }
@@ -28,7 +28,7 @@ enum StreamType {
 impl StreamType {
     pub fn composite_scalar(self) -> bool {
         match self {
-            StreamType::Array | StreamType::Map(_) => false,
+            StreamType::Array | StreamType::Map => false,
             StreamType::Bytes | StreamType::Text => true,
         }
     }
@@ -288,7 +288,7 @@ impl State {
 
     /// Add a new Map into the context
     pub fn map(&mut self, v: HeaderValueStream) -> Result<(), StateError> {
-        self.struct_start(v, StreamType::Map(false), |nz| StructTy::Map {
+        self.struct_start(v, StreamType::Map, |nz| StructTy::Map {
             exp_val: false,
             elements: nz,
         })
