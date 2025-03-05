@@ -1,0 +1,8 @@
+[package]
+name = "cbored-examples"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cbored = { path = "../", features = ["derive" ] }
+cbored-derive = { path = "../cbored-derive" }
