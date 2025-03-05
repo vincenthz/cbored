@@ -14,5 +14,5 @@ categories = ["parsing", "encoding"]
 cbored-derive = { path = "./cbored-derive", version = "0.4", optional = true }
 
 [features]
-default = []
+default = ["derive"]
 derive = ["cbored-derive"]

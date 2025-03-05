@@ -167,7 +167,7 @@ pub(crate) enum FieldAttr {
     CborType(FieldCborType),
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) struct FieldAttrs {
     pub(crate) variant_type: FieldVariantType,
     pub(crate) mandatory_map: bool,

@@ -41,12 +41,14 @@ impl StructAttrs {
     }
 }
 
+#[derive(PartialEq, Eq)]
 pub struct Field {
-    index: usize,
-    name: Ident,
-    attrs: FieldAttrs,
+    pub index: usize,
+    pub name: Ident,
+    pub attrs: FieldAttrs,
 }
 
+#[derive(PartialEq, Eq)]
 pub(crate) enum StructOutput {
     /// contains the fields idents
     Unnamed(Vec<Field>),
@@ -63,7 +65,7 @@ impl StructOutput {
     }
 }
 
-fn get_struct_naming(fields: &Fields) -> StructOutput {
+pub(crate) fn get_struct_naming(fields: &Fields) -> StructOutput {
     fn attrs(attrs: &Vec<syn::Attribute>) -> FieldAttrs {
         get_my_attributes(attrs)
             .map(|a| parse_field_attr(a))

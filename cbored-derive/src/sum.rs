@@ -3,6 +3,9 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{DataEnum, Ident, Meta, Variant};
 
+use crate::product::get_struct_naming;
+use crate::product::StructOutput;
+
 use super::attr::*;
 use super::common::*;
 
@@ -43,14 +46,16 @@ impl EnumAttrs {
 #[derive(PartialEq, Eq)]
 pub struct VariantDef {
     cbor_type: Option<FieldCborType>,
-    ty: VariantType,
+    ty: Option<StructOutput>,
 }
 
-#[derive(PartialEq, Eq)]
-pub enum VariantType {
-    NoParams,
-    AnonParams { field_names: Vec<(usize, Ident)> },
-    StructParams { field_names: Vec<Ident> },
+pub struct FieldAttr {}
+
+impl FieldAttr {
+    pub fn new(attributes: &Vec<syn::Attribute>) -> Self {
+        let attrs = get_my_attributes(attributes);
+        FieldAttr {}
+    }
 }
 
 // get whether the variant is of the form `A { a: ... , b: ... }` or `A(... , ...)` or `A`
@@ -86,28 +91,10 @@ fn variant_field(attrs: &EnumAttrs, variant: &Variant) -> VariantDef {
         cbor_type,
     } = variant_attrs;
 
-    let ty = if nb_items == 0 {
-        VariantType::NoParams
-    } else if all_named {
-        let field_names = variant
-            .fields
-            .iter()
-            .map(|f| f.ident.clone().unwrap())
-            .collect::<Vec<_>>();
-        VariantType::StructParams { field_names }
-    } else if all_unnamed {
-        let field_names = variant
-            .fields
-            .iter()
-            .enumerate()
-            .map(|(i, _)| {
-                let ident = quote::format_ident!("field{}", i);
-                (i, ident)
-            })
-            .collect::<Vec<_>>();
-        VariantType::AnonParams { field_names }
+    let ty = if variant.fields.is_empty() {
+        None
     } else {
-        panic!("internal error")
+        Some(get_struct_naming(&variant.fields))
     };
     VariantDef { ty, cbor_type }
 }
@@ -130,11 +117,11 @@ pub(crate) fn derive_enum_se(
 
             let (parameters, se_branch_body) = {
                 match &variant_type {
-                    VariantType::StructParams { field_names } => {
+                    Some(StructOutput::Named(field_names)) => {
                         if field_names.len() != 1 {
                             panic!("cannot have enumtype with more than 1 argument")
                         }
-                        let field_name = &field_names[0];
+                        let field_name = &field_names[0].name;
                         (
                             quote! {
                                 { #field_name }
@@ -142,11 +129,11 @@ pub(crate) fn derive_enum_se(
                             quote! { #field_name.encode(writer); },
                         )
                     }
-                    VariantType::AnonParams { field_names } => {
+                    Some(StructOutput::Unnamed(field_names)) => {
                         if field_names.len() != 1 {
                             panic!("cannot have enumtype with more than 1 argument")
                         }
-                        let field_name = &field_names[0].1;
+                        let field_name = &field_names[0].name;
                         (
                             quote! {
                                 ( #field_name )
@@ -154,7 +141,7 @@ pub(crate) fn derive_enum_se(
                             quote! { #field_name.encode(writer); },
                         )
                     }
-                    VariantType::NoParams => match variant_def.cbor_type {
+                    None => match variant_def.cbor_type {
                         None => panic!("cannot have no cbor_type"),
                         Some(FieldCborType::Null) => (quote! {}, quote! { writer.null(); }),
                         Some(_) => {
@@ -183,13 +170,15 @@ pub(crate) fn derive_enum_se(
 
             let (parameters, se_fields) = {
                 match &variant_type {
-                    VariantType::StructParams { field_names } => {
+                    Some(StructOutput::Named(field_names)) => {
                         let de_field_names = field_names
                             .iter()
+                            .map(|field| &field.name)
                             .map(|ident| quote! { #ident })
                             .collect::<Vec<_>>();
                         let se_fields = field_names
                             .iter()
+                            .map(|field| &field.name)
                             .map(|ident| {
                                 quote! { writer.encode(#ident); }
                             })
@@ -197,38 +186,39 @@ pub(crate) fn derive_enum_se(
                         let parameters = quote! { { #( #de_field_names ),* } };
                         (parameters, se_fields)
                     }
-                    VariantType::AnonParams { field_names } => {
+                    Some(StructOutput::Unnamed(field_names)) => {
                         let de_field_names = field_names
                             .iter()
-                            .map(|(_, ident)| quote! { #ident })
+                            .map(|field| &field.name)
+                            .map(|ident| quote! { #ident })
                             .collect::<Vec<_>>();
                         let se_fields = field_names
                             .iter()
-                            .map(|(_, ident)| quote! { writer.encode(#ident); })
+                            .map(|field| &field.name)
+                            .map(|ident| quote! { writer.encode(#ident); })
                             .collect::<Vec<_>>();
                         let parameters = quote! { ( #( #de_field_names ),* ) };
                         (parameters, se_fields)
                     }
-                    VariantType::NoParams => (quote! {}, vec![]),
+                    None => (quote! {}, vec![]),
                 }
             };
 
             // skip writing array in a case of enumint mode and no params
-            let se_branch_body =
-                if variant_type == &VariantType::NoParams && attrs.enumtype == EnumType::EnumInt {
-                    quote! {
+            let se_branch_body = if variant_type == &None && attrs.enumtype == EnumType::EnumInt {
+                quote! {
+                    writer.encode(&(#variant_number as u64));
+                    #(#se_fields)*
+                }
+            } else {
+                quote! {
+                    let len = ::cbored::StructureLength::from(1 + #nb_items as u64);
+                    writer.array_build(len, |writer| {
                         writer.encode(&(#variant_number as u64));
                         #(#se_fields)*
-                    }
-                } else {
-                    quote! {
-                        let len = ::cbored::StructureLength::from(1 + #nb_items as u64);
-                        writer.array_build(len, |writer| {
-                            writer.encode(&(#variant_number as u64));
-                            #(#se_fields)*
-                        })
-                    }
-                };
+                    })
+                }
+            };
             let se_branch = quote! {
                 Self::#ident #parameters => { #se_branch_body }
             };
@@ -309,7 +299,7 @@ pub(crate) fn derive_enum_de(
                 };
 
                 let (field_parameter, variant_field_deser) = match variant_type {
-                    VariantType::NoParams => {
+                    None => {
                         if cbor_type != FieldCborType::Null {
                             panic!("no arguemnt cannot be anything else than cbor null")
                         }
@@ -320,11 +310,11 @@ pub(crate) fn derive_enum_de(
                             },
                         )
                     }
-                    VariantType::AnonParams { field_names } => {
+                    Some(StructOutput::Unnamed(field_names)) => {
                         if field_names.len() != 1 {
                             panic!("cannot have enumtype with more than 1 argument")
                         }
-                        let field_name = &field_names[0].1;
+                        let field_name = &field_names[0].name;
                         (
                             quote! {
                                 ( #field_name )
@@ -334,11 +324,11 @@ pub(crate) fn derive_enum_de(
                             },
                         )
                     }
-                    VariantType::StructParams { field_names } => {
+                    Some(StructOutput::Named(field_names)) => {
                         if field_names.len() != 1 {
                             panic!("cannot have enumtype with more than 1 argument")
                         }
-                        let field_name = &field_names[0];
+                        let field_name = &field_names[0].name;
                         (
                             quote! {
                                 { #field_name }
@@ -386,9 +376,10 @@ pub(crate) fn derive_enum_de(
 
                 let (parameters, de_fields) = {
                     match variant_type {
-                        VariantType::StructParams { field_names } => {
+                        Some(StructOutput::Named(field_names)) => {
                             let de_field_names = field_names
                                 .iter()
+                                .map(|field| &field.name)
                                 .map(|ident| quote! { #ident })
                                 .collect::<Vec<_>>();
                             let de_fields = de_field_names
@@ -404,14 +395,17 @@ pub(crate) fn derive_enum_de(
                             let parameters = quote! { { #( #de_field_names ),* } };
                             (parameters, de_fields)
                         }
-                        VariantType::AnonParams { field_names } => {
+                        Some(StructOutput::Unnamed(field_names)) => {
                             let de_field_names = field_names
                                 .iter()
-                                .map(|(_, ident)| quote! { #ident })
+                                .map(|field| &field.name)
+                                .map(|ident| quote! { #ident })
                                 .collect::<Vec<_>>();
                             let de_fields = field_names
                                 .iter()
-                                .map(|(fidx, ident)| {
+                                .map(|field| {
+                                    let fidx = field.index;
+                                    let ident = &field.name;
                                     let fname_str = format!("{}", ident);
                                     quote! {
                                         let #ident = array[#fidx + 1].decode().map_err(|e| e.push_str(#fname_str).push_str(#variant_name).push::<Self>())?;
@@ -421,7 +415,7 @@ pub(crate) fn derive_enum_de(
                             let parameters = quote! { ( #( #de_field_names ),* ) };
                             (parameters, de_fields)
                         }
-                        VariantType::NoParams => (quote! {}, vec![]),
+                        None => (quote! {}, vec![]),
                     }
                 };
 
