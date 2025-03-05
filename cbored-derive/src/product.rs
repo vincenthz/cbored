@@ -409,7 +409,7 @@ pub(crate) fn derive_struct_de(
                         } = &field;
                         let field_index = *field_index;
                         let field_name_str = format!("{}", field_name);
-                        let de_body = if field_attrs.variant == FieldVariantType::Vec {
+                        let de_body = if field_attrs.variant_type == FieldVariantType::Vec {
                             quote! {
                                 let #field_name = {
                                     let mut r = array[#field_index].reader();

@@ -5,6 +5,7 @@ mod attr;
 mod common;
 mod product;
 mod sum;
+mod ty;
 
 use attr::get_my_attributes;
 use product::derive_struct;
@@ -19,6 +20,9 @@ pub fn derive_cbor_repr(input: TokenStream) -> TokenStream {
     if has_generics {
         panic!("cannot handle types with generics")
     }
+
+    // future input'ing - unused for now
+    let _ = ty::parse(ast.clone());
 
     // Gather the cborrepr attributes as Meta
     let attrs = get_my_attributes(&ast.attrs).collect::<Vec<_>>();

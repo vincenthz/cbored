@@ -79,7 +79,12 @@ fn variant_field(attrs: &EnumAttrs, variant: &Variant) -> VariantDef {
         EnumType::TagVariant => {}
     };
 
-    let cbor_type = variant_attrs.cbor_type;
+    let FieldAttrs {
+        variant_type: _,
+        mandatory_map: _,
+        optional_vec: _,
+        cbor_type,
+    } = variant_attrs;
 
     let ty = if nb_items == 0 {
         VariantType::NoParams

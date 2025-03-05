@@ -169,7 +169,7 @@ pub(crate) enum FieldAttr {
 
 #[derive(Clone)]
 pub(crate) struct FieldAttrs {
-    pub(crate) variant: FieldVariantType,
+    pub(crate) variant_type: FieldVariantType,
     pub(crate) mandatory_map: bool,
     pub(crate) optional_vec: bool,
     pub(crate) cbor_type: Option<FieldCborType>,
@@ -178,7 +178,7 @@ pub(crate) struct FieldAttrs {
 impl Default for FieldAttrs {
     fn default() -> Self {
         FieldAttrs {
-            variant: FieldVariantType::Simple,
+            variant_type: FieldVariantType::Simple,
             mandatory_map: false,
             optional_vec: false,
             cbor_type: None,
@@ -189,7 +189,7 @@ impl Default for FieldAttrs {
 impl FieldAttrs {
     pub fn merge(mut self, attr: &FieldAttr) -> Self {
         match attr {
-            FieldAttr::Variant(vty) => self.variant = *vty,
+            FieldAttr::Variant(vty) => self.variant_type = *vty,
             FieldAttr::Mandatory => self.mandatory_map = true,
             FieldAttr::Optional => self.optional_vec = true,
             FieldAttr::CborType(ty) => self.cbor_type = Some(*ty),
