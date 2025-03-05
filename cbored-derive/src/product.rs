@@ -1,5 +1,6 @@
 use proc_macro::TokenStream;
 
+use proc_macro2::Span;
 use quote::quote;
 use syn::{DataStruct, Fields, FieldsNamed, FieldsUnnamed, Ident, Meta};
 
@@ -46,6 +47,7 @@ pub struct Field {
     pub index: usize,
     pub name: Ident,
     pub attrs: FieldAttrs,
+    pub is_vec: bool,
 }
 
 #[derive(PartialEq, Eq)]
@@ -86,6 +88,7 @@ pub(crate) fn get_struct_naming(fields: &Fields) -> StructOutput {
                     index,
                     name: field.ident.clone().unwrap(),
                     attrs: attrs(&field.attrs),
+                    is_vec: false,
                 })
                 .collect::<Vec<_>>();
             StructOutput::Named(names)
@@ -97,15 +100,63 @@ pub(crate) fn get_struct_naming(fields: &Fields) -> StructOutput {
             let indexes = unnamed
                 .iter()
                 .enumerate()
-                .map(|(i, fi)| Field {
-                    index: i,
-                    name: quote::format_ident!("field{}", i),
-                    attrs: attrs(&fi.attrs),
+                .map(|(i, fi)| {
+                    let is_vec = type_is_vec(&fi.ty);
+                    Field {
+                        index: i,
+                        name: quote::format_ident!("field{}", i),
+                        attrs: attrs(&fi.attrs),
+                        is_vec,
+                    }
                 })
                 .collect();
             StructOutput::Unnamed(indexes)
         }
         Fields::Unit => panic!("field unit not supported"),
+    }
+}
+
+fn type_is_u8(ty: &syn::Type) -> bool {
+    match ty {
+        syn::Type::Path(path) => {
+            let path = &path.path.segments.iter().collect::<Vec<_>>();
+            if path.len() == 1 && path[0].ident == Ident::new("u8", Span::call_site()) {
+                match &path[0].arguments {
+                    syn::PathArguments::None => true,
+                    _ => false,
+                }
+            } else {
+                false
+            }
+        }
+        _ => false,
+    }
+}
+
+// check if the type is Vec<..> but not Vec<u8>
+fn type_is_vec(ty: &syn::Type) -> bool {
+    match ty {
+        syn::Type::Path(p) => {
+            let path = &p.path.segments.iter().collect::<Vec<_>>();
+            if path.len() == 1 && path[0].ident == Ident::new("Vec", Span::call_site()) {
+                match &path[0].arguments {
+                    syn::PathArguments::None => false,
+                    syn::PathArguments::AngleBracketed(args) => {
+                        let one_arg = args.args.len() == 1;
+                        match &args.args[0] {
+                            syn::GenericArgument::Type(inner_ty) => {
+                                one_arg && !type_is_u8(inner_ty)
+                            }
+                            _ => false,
+                        }
+                    }
+                    syn::PathArguments::Parenthesized(_) => false,
+                }
+            } else {
+                false
+            }
+        }
+        _ => false,
     }
 }
 
@@ -133,6 +184,7 @@ pub(crate) fn derive_struct_se(
                     index: field_idx,
                     name: field_name,
                     attrs: _,
+                    is_vec: _,
                 } = &field;
                 let field_body = if last_is_opt && *field_idx == fields.len() - 1 {
                     quote! {
@@ -214,6 +266,7 @@ pub(crate) fn derive_struct_se(
                                 index: field_index,
                                 name: field_name,
                                 attrs: field_attrs,
+                                is_vec: _,
                             } = &field;
                             loop {
                                 let abs_index = *field_index as u64 + rel_index;
@@ -408,6 +461,7 @@ pub(crate) fn derive_struct_de(
                             index: field_index,
                             name: field_name,
                             attrs: field_attrs,
+                            is_vec: _,
                         } = &field;
                         let field_index = *field_index;
                         let field_name_str = format!("{}", field_name);
@@ -462,6 +516,7 @@ pub(crate) fn derive_struct_de(
                             index: field_index,
                             name: field_name,
                             attrs: field_attrs,
+                            is_vec: _,
                         } = &field;
                         let field_index = *field_index;
 
@@ -542,6 +597,7 @@ pub(crate) fn derive_struct_de(
                             index: _,
                             name: field_name,
                             attrs: _,
+                            is_vec: _,
                         } = &field;
                         let field_name_str = format!("{}", field_name);
                         let de_body = quote! {
@@ -566,6 +622,7 @@ pub(crate) fn derive_struct_de(
                     index: field_index,
                     name: field_name,
                     attrs: _,
+                    is_vec: _,
                 } = &field;
                 let field_index = *field_index;
                 let field_name_str = format!("{}", field_name);

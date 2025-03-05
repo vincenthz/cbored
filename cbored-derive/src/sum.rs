@@ -49,15 +49,6 @@ pub struct VariantDef {
     ty: Option<StructOutput>,
 }
 
-pub struct FieldAttr {}
-
-impl FieldAttr {
-    pub fn new(attributes: &Vec<syn::Attribute>) -> Self {
-        let attrs = get_my_attributes(attributes);
-        FieldAttr {}
-    }
-}
-
 // get whether the variant is of the form `A { a: ... , b: ... }` or `A(... , ...)` or `A`
 fn variant_field(attrs: &EnumAttrs, variant: &Variant) -> VariantDef {
     let all_named = variant.fields.iter().all(|f| f.ident.is_some());
@@ -194,8 +185,20 @@ pub(crate) fn derive_enum_se(
                             .collect::<Vec<_>>();
                         let se_fields = field_names
                             .iter()
-                            .map(|field| &field.name)
-                            .map(|ident| quote! { writer.encode(#ident); })
+                            .map(|field| {
+                                let ident = &field.name;
+                                if field.is_vec || field.attrs.variant_type == FieldVariantType::Vec {
+                                    quote! {
+                                        writer.array_build(::cbored::StructureLength::from(#ident.len() as u64), |writer| {
+                                            for v in #ident.iter() {
+                                                writer.encode(v);
+                                            }
+                                        });
+                                    }
+                                } else {
+                                    quote! { writer.encode(#ident); }
+                                }
+                            })
                             .collect::<Vec<_>>();
                         let parameters = quote! { ( #( #de_field_names ),* ) };
                         (parameters, se_fields)
@@ -406,9 +409,22 @@ pub(crate) fn derive_enum_de(
                                 .map(|field| {
                                     let fidx = field.index;
                                     let ident = &field.name;
-                                    let fname_str = format!("{}", ident);
-                                    quote! {
-                                        let #ident = array[#fidx + 1].decode().map_err(|e| e.push_str(#fname_str).push_str(#variant_name).push::<Self>())?;
+                                    if field.is_vec || field.attrs.variant_type == FieldVariantType::Vec {
+                                        quote! {
+                                            let #ident = {
+                                                let mut r = array[#fidx + 1].reader();
+                                                let vec = r.array().map_err(::cbored::DecodeErrorKind::ReaderError).map_err(|e| e.context::<Self>())?
+                                                    .iter()
+                                                    .map(|mut r| r.decode())
+                                                    .collect::<Result<Vec<_>, ::cbored::DecodeError>>()?;
+                                                vec
+                                            };
+                                        }
+                                    } else {
+                                        let fname_str = format!("{}", ident);
+                                        quote! {
+                                            let #ident = array[#fidx + 1].decode().map_err(|e| e.push_str(#fname_str).push_str(#variant_name).push::<Self>())?;
+                                        }
                                     }
                                 })
                                 .collect::<Vec<_>>();
