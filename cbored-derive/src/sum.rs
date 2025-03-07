@@ -12,12 +12,14 @@ use super::common::*;
 pub(crate) struct EnumAttrs {
     enumtype: EnumType,
     variant_starts_at: usize,
+    variant_skip: Vec<usize>,
 }
 
 impl EnumAttrs {
     pub fn from_metas(attrs: &[&Meta]) -> Self {
         let mut enumtype = EnumType::TagVariant;
         let mut variant_starts_at = 0;
+        let mut variant_skip = Vec::new();
 
         for attr in attrs {
             for attr in parse_attr(&attr) {
@@ -25,20 +27,19 @@ impl EnumAttrs {
                     Attr::Tag(_) | Attr::Structure(_) => {
                         panic!("enum does not support struct type attribute")
                     }
-                    Attr::SkipKey(_) => {
-                        panic!("enum does not support skip key attribute")
-                    }
                     Attr::MapStartsAt(_) => {
                         panic!("enum does not support map_starts_at key attribute")
                     }
                     Attr::EnumType(ty) => enumtype = ty,
                     Attr::VariantStartsAt(v) => variant_starts_at = v,
+                    Attr::SkipKey(v) => variant_skip.push(v as usize),
                 }
             }
         }
         Self {
             enumtype,
             variant_starts_at,
+            variant_skip,
         }
     }
 }
@@ -90,6 +91,27 @@ fn variant_field(attrs: &EnumAttrs, variant: &Variant) -> VariantDef {
     VariantDef { ty, cbor_type }
 }
 
+pub fn enumerate_variant_indices<'a, T: Clone, I: Iterator<Item = T>>(
+    attr: &EnumAttrs,
+    it: &mut I,
+) -> Vec<(usize, T)> {
+    let elements = it.map(|v| v.clone()).collect::<Vec<_>>();
+
+    let mut index = attr.variant_starts_at;
+
+    let mut indices = Vec::new();
+    for _ in 0..elements.len() {
+        while attr.variant_skip.contains(&index) {
+            index += 1;
+        }
+        indices.push(index);
+        index += 1;
+    }
+
+    assert_eq!(elements.len(), indices.len());
+    indices.into_iter().zip(elements).collect()
+}
+
 pub(crate) fn derive_enum_se(
     name: &Ident,
     attrs: &[&Meta],
@@ -100,7 +122,9 @@ pub(crate) fn derive_enum_se(
     let attrs = EnumAttrs::from_metas(attrs);
 
     if attrs.enumtype == EnumType::EnumType {
-        for (_variant_index, variant) in st.variants.iter().enumerate() {
+        for (_variant_index, variant) in
+            enumerate_variant_indices(&attrs, &mut st.variants.iter()).iter()
+        {
             let ident = &variant.ident;
 
             let variant_def = variant_field(&attrs, &variant);
@@ -149,7 +173,9 @@ pub(crate) fn derive_enum_se(
             se_branches.push(se_branch);
         }
     } else {
-        for (variant_index, variant) in st.variants.iter().enumerate() {
+        for (variant_index, variant) in
+            enumerate_variant_indices(&attrs, &mut st.variants.iter()).iter()
+        {
             let ident = &variant.ident;
 
             let nb_items = variant.fields.len();
@@ -256,7 +282,9 @@ pub(crate) fn derive_enum_de(
             //          get field 0..n;
             //          Ok(Constructor field 0..n)
             //     }
-            for (variant_index, variant) in st.variants.iter().enumerate() {
+            for (variant_index, variant) in
+                enumerate_variant_indices(&attrs, &mut st.variants.iter()).iter()
+            {
                 let ident = &variant.ident;
                 let variant_number = attrs.variant_starts_at + variant_index;
 
@@ -274,7 +302,9 @@ pub(crate) fn derive_enum_de(
             //          get field 1;
             //          Ok(Constructor field 0..n)
             //     }
-            for (_variant_index, variant) in st.variants.iter().enumerate() {
+            for (_variant_index, variant) in
+                enumerate_variant_indices(&attrs, &mut st.variants.iter()).iter()
+            {
                 let ident = &variant.ident;
                 let variant_name = format!("{}", ident);
                 let variant_def = variant_field(&attrs, &variant);
@@ -353,7 +383,9 @@ pub(crate) fn derive_enum_de(
             }
         }
         EnumType::TagVariant => {
-            for (variant_index, variant) in st.variants.iter().enumerate() {
+            for (variant_index, variant) in
+                enumerate_variant_indices(&attrs, &mut st.variants.iter()).iter()
+            {
                 let ident = &variant.ident;
                 let variant_name = format!("{}", ident);
                 let variant_number = attrs.variant_starts_at + variant_index;
