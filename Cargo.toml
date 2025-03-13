@@ -1,6 +1,6 @@
 [package]
 name = "cbored"
-version = "0.4.2"
+version = "0.4.3"
 edition = "2021"
 authors = ["Vincent Hanquez <vincent@typed.io>"]
 license = "MIT/Apache-2.0"
