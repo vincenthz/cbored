@@ -34,6 +34,12 @@ impl Encode for Byte {
     }
 }
 
+impl Encode for BytesOwned {
+    fn encode(&self, writer: &mut Writer) {
+        writer.encode(&self.borrow())
+    }
+}
+
 impl Encode for Constant {
     fn encode(&self, writer: &mut Writer) {
         writer.constant(*self)
@@ -141,6 +147,12 @@ impl Encode for [u8] {
 impl<const N: usize> Encode for [u8; N] {
     fn encode(&self, writer: &mut Writer) {
         writer.bytes(&Bytes::from_slice(self))
+    }
+}
+
+impl Encode for Vec<u8> {
+    fn encode(&self, writer: &mut Writer) {
+        writer.encode(self.as_slice())
     }
 }
 
